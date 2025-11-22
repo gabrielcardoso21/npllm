@@ -98,6 +98,9 @@ data/
 *.feather
 *.hdf5
 
+# PostgreSQL Data (Docker)
+data/postgres/
+
 # Database
 *.db
 *.sqlite
