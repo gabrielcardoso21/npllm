@@ -22,6 +22,65 @@ Este documento define o **MVP (Minimum Viable Product)** para um assistente de c
 
 ## 🔍 Pesquisa Profunda: Estado da Arte
 
+### 0. Feedback Emocional em Assistentes de Código
+
+#### 0.1 Abordagens Existentes
+
+**RLHF (Reinforcement Learning from Human Feedback)**:
+- ✅ Técnica padrão para usar feedback humano
+- ✅ Usado em ChatGPT, Claude, etc.
+- ✅ Combina feedback explícito e implícito
+- ⚠️ Não foca especificamente em emoções
+
+**Análise de Sentimento**:
+- ✅ Modelos como RoBERTa para análise de sentimento
+- ✅ Identifica positivo/negativo/neutro
+- ✅ Amplamente usado em NLP
+- ⚠️ Não detecta emoções específicas (frustração, satisfação)
+
+**Detecção de Emoções**:
+- ✅ Modelos especializados em emoções
+- ✅ Identifica frustração, satisfação, confiança, etc.
+- ✅ Mais granular que sentimento
+- ⚠️ Menos comum em assistentes de código
+
+**Relevância para MVP**:
+- ✅ **Essencial**: Feedback emocional guia aprendizado
+- ✅ **Diferencial**: Poucos assistentes usam emoções explicitamente
+- ✅ **Valor**: Priorizar padrões que geram satisfação
+
+---
+
+#### 0.2 Integração de Feedback Emocional
+
+**Abordagem Proposta**:
+1. **Detecção de Emoções**:
+   - Frustração (negativo) → Evitar padrões similares
+   - Satisfação (positivo) → Priorizar padrões similares
+   - Confiança (positivo) → Consolidar padrões
+
+2. **Análise de Sentimento**:
+   - Comentários do usuário
+   - Texto de feedback
+   - Comunicação durante desenvolvimento
+
+3. **Integração com Feedback Implícito**:
+   - 70% Feedback Implícito (aceitar/editar/deletar)
+   - 30% Feedback Emocional (emoções detectadas)
+   - Fórmula: `r_total = 0.7 * r_implícito + 0.3 * r_emocional`
+
+4. **Aplicação no Aprendizado**:
+   - Priorizar padrões que geram satisfação
+   - Evitar padrões que geram frustração
+   - Consolidar padrões que geram confiança
+
+**Tecnologias**:
+- **RoBERTa Sentiment**: Análise de sentimento
+- **Emotion Detection Models**: Detecção de emoções específicas
+- **Integração RL**: Usar feedback emocional no RL
+
+---
+
 ### 1. Transfer Learning Entre Projetos
 
 #### 1.1 Abordagens Existentes
@@ -222,11 +281,13 @@ Este documento define o **MVP (Minimum Viable Product)** para um assistente de c
 - ✅ Extrair decisões arquiteturais
 
 **Tecnologias**:
-- RAG para indexar estrutura - ✅ Já temos
-- LLM para análise - ✅ Já temos
-- Parser de estrutura - ⏳ A implementar
+- RAG para indexar estrutura - ⚠️ **Código existe mas não testado**
+- LLM para análise - ⚠️ **Código existe mas não testado**
+- Parser de estrutura - ⏳ A implementar do zero
 
 **Prioridade**: 🔴 **CRÍTICA**
+
+**Status Real**: ⚠️ **Código não testado - considerar começar do zero**
 
 ---
 
@@ -241,11 +302,13 @@ Este documento define o **MVP (Minimum Viable Product)** para um assistente de c
 - ✅ Preservar conhecimento importante (MAS)
 
 **Tecnologias**:
-- RAG para indexar - ✅ Já temos
-- MAS para preservar - ✅ Já temos
-- Generalização - ⏳ A implementar
+- RAG para indexar - ⚠️ **Código existe mas não testado**
+- MAS para preservar - ⚠️ **Código existe mas não testado**
+- Generalização - ⏳ A implementar do zero
 
 **Prioridade**: 🔴 **CRÍTICA**
+
+**Status Real**: ⚠️ **Código não testado - considerar começar do zero**
 
 ---
 
@@ -260,15 +323,46 @@ Este documento define o **MVP (Minimum Viable Product)** para um assistente de c
 - ✅ Sugerir estrutura arquitetural
 
 **Tecnologias**:
-- RAG para busca - ✅ Já temos
-- LLM para adaptação - ✅ Já temos
-- Transfer learning - ⏳ A implementar
+- RAG para busca - ⚠️ **Código existe mas não testado**
+- LLM para adaptação - ⚠️ **Código existe mas não testado**
+- Transfer learning - ⏳ A implementar do zero
 
 **Prioridade**: 🔴 **CRÍTICA**
 
+**Status Real**: ⚠️ **Código não testado - considerar começar do zero**
+
 ---
 
-### 4. Sugestões Arquiteturais
+### 4. Processamento de Feedback Emocional
+
+**Descrição**: Processar feedback baseado em emoções do usuário para melhorar aprendizado
+
+**Funcionalidades**:
+- ✅ Detectar emoções do usuário (frustração, satisfação, confiança)
+- ✅ Analisar sentimento de comentários/texto
+- ✅ Integrar feedback emocional com feedback implícito
+- ✅ Ajustar aprendizado baseado em emoções
+- ✅ Priorizar padrões que geram satisfação
+
+**Tecnologias**:
+- Análise de sentimento - ⚠️ **Código existe mas não testado**
+- Detecção de emoções - ⏳ A implementar do zero
+- Integração com RL - ⏳ A implementar do zero
+- Processamento de feedback - ⏳ A implementar do zero
+
+**Prioridade**: 🔴 **CRÍTICA** (adicionado baseado em feedback)
+
+**Status Real**: ⚠️ **Código básico existe mas não testado - considerar começar do zero**
+
+**Pesquisa Encontrada**:
+- **RLHF (Reinforcement Learning from Human Feedback)**: Técnica padrão para usar feedback humano
+- **Análise de Sentimento**: Modelos como RoBERTa para análise de sentimento
+- **Detecção de Emoções**: Identificar frustração, satisfação, confiança
+- **Integração**: Combinar feedback implícito (70%) + emocional (30%)
+
+---
+
+### 5. Sugestões Arquiteturais
 
 **Descrição**: Sugerir estrutura e padrões para novos projetos
 
@@ -279,15 +373,17 @@ Este documento define o **MVP (Minimum Viable Product)** para um assistente de c
 - ✅ Sugerir decisões arquiteturais
 
 **Tecnologias**:
-- LLM Base - ✅ Já temos
-- RAG para contexto - ✅ Já temos
-- Templates arquiteturais - ⏳ A implementar
+- LLM Base - ⚠️ **Código existe mas não testado**
+- RAG para contexto - ⚠️ **Código existe mas não testado**
+- Templates arquiteturais - ⏳ A implementar do zero
 
 **Prioridade**: 🟡 **ALTA**
 
+**Status Real**: ⚠️ **Código não testado - considerar começar do zero**
+
 ---
 
-### 5. Geração de Código Arquitetural
+### 6. Geração de Código Arquitetural
 
 **Descrição**: Gerar código que implementa decisões arquiteturais
 
@@ -298,11 +394,13 @@ Este documento define o **MVP (Minimum Viable Product)** para um assistente de c
 - ✅ Gerar configurações
 
 **Tecnologias**:
-- LLM Base - ✅ Já temos
-- Templates - ⏳ A implementar
-- Contexto arquitetural - ⏳ A implementar
+- LLM Base - ⚠️ **Código existe mas não testado**
+- Templates - ⏳ A implementar do zero
+- Contexto arquitetural - ⏳ A implementar do zero
 
 **Prioridade**: 🟡 **ALTA**
+
+**Status Real**: ⚠️ **Código não testado - considerar começar do zero**
 
 ---
 
@@ -358,23 +456,30 @@ graph TB
         USER[Programador Arquiteto]
         PROJ1[Projeto 1<br/>Aprender]
         PROJ2[Projeto 2<br/>Aplicar]
+        EMOTION[Emoções do Usuário<br/>Frustração, Satisfação, Confiança]
+    end
+    
+    subgraph "Feedback"
+        IMPLICIT[Feedback Implícito<br/>Aceitar/Editar/Deletar<br/>⏳ Do Zero]
+        EMOTIONAL[Feedback Emocional<br/>Análise de Sentimento<br/>Detecção de Emoções<br/>⏳ Do Zero]
+        INTEGRATE[Integração Feedback<br/>70% Implícito + 30% Emocional<br/>⏳ Do Zero]
     end
     
     subgraph "Análise"
-        ANALYZE[Análise Arquitetural<br/>⏳ A implementar]
-        PATTERNS[Identificação de Padrões<br/>⏳ A implementar]
-        GENERALIZE[Generalização<br/>⏳ A implementar]
+        ANALYZE[Análise Arquitetural<br/>⏳ Do Zero]
+        PATTERNS[Identificação de Padrões<br/>⏳ Do Zero]
+        GENERALIZE[Generalização<br/>Guiada por Feedback<br/>⏳ Do Zero]
     end
     
     subgraph "Aprendizado"
-        RAG[RAG<br/>PostgreSQL + pgvector<br/>✅ Já temos]
-        MAS[MAS<br/>Preservação<br/>✅ Já temos]
-        REPLAY[Replay<br/>Exemplos Importantes<br/>✅ Já temos]
+        RAG[RAG<br/>PostgreSQL + pgvector<br/>⏳ Do Zero]
+        MAS[MAS<br/>Preservação<br/>⏳ Do Zero]
+        REPLAY[Replay<br/>Prioriza Satisfação<br/>⏳ Do Zero]
     end
     
     subgraph "Aplicação"
-        LLM[LLM Base<br/>CodeLlama 3B<br/>✅ Já temos]
-        TRANSFER[Transfer Learning<br/>⏳ A implementar]
+        LLM[LLM Base<br/>CodeLlama 3B<br/>⏳ Do Zero]
+        TRANSFER[Transfer Learning<br/>⏳ Do Zero]
         SUGGEST[Sugestões Arquiteturais]
     end
     
@@ -382,8 +487,20 @@ graph TB
     ANALYZE --> PATTERNS
     PATTERNS --> GENERALIZE
     GENERALIZE --> RAG
+    
+    USER --> IMPLICIT
+    USER --> EMOTIONAL
+    EMOTION --> EMOTIONAL
+    IMPLICIT --> INTEGRATE
+    EMOTIONAL --> INTEGRATE
+    
+    INTEGRATE --> GENERALIZE
+    INTEGRATE --> REPLAY
+    INTEGRATE --> MAS
+    
     RAG --> MAS
     MAS --> REPLAY
+    REPLAY --> RAG
     
     PROJ2 --> TRANSFER
     TRANSFER --> RAG
@@ -391,6 +508,8 @@ graph TB
     LLM --> SUGGEST
     SUGGEST --> USER
     
+    style EMOTIONAL fill:#ffcccc
+    style INTEGRATE fill:#ffcccc
     style RAG fill:#fff4e1
     style MAS fill:#ffe1f5
     style REPLAY fill:#e1ffe1
@@ -401,157 +520,284 @@ graph TB
 
 ## 📊 Matriz de Componentes: Essencial vs. Futuro
 
-| Componente | Status Atual | Uso no MVP | Prioridade | Esforço |
-|------------|--------------|------------|------------|---------|
-| **LLM Base (CodeLlama 3B)** | ✅ Implementado | ✅ Essencial | 🔴 Crítica | - |
-| **RAG (PostgreSQL + pgvector)** | ✅ Implementado | ✅ Essencial | 🔴 Crítica | - |
-| **MAS (Preservação)** | ✅ Implementado | ✅ Essencial | 🟡 Alta | - |
-| **Replay Buffer** | ✅ Implementado | ✅ Essencial | 🟡 Alta | - |
-| **Análise Arquitetural** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Médio |
-| **Identificação de Padrões** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Médio |
-| **Generalização** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Alto |
-| **Transfer Learning** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Alto |
-| **Templates Arquiteturais** | ❌ Não existe | ✅ Essencial | 🟡 Alta | Baixo |
-| **Fine-tuning** | ⏳ Planejado | ⚠️ Futuro | 🔵 Baixa | Alto |
-| **Consolidação Sono** | ⏳ Planejado | ⚠️ Futuro | 🔵 Baixa | Alto |
-| **Backpropamine** | ❌ Não existe | ⚠️ Futuro | 🔵 Baixa | Muito Alto |
+| Componente | Status Atual | Uso no MVP | Prioridade | Esforço | Observação |
+|------------|--------------|------------|------------|---------|------------|
+| **LLM Base (CodeLlama 3B)** | ⚠️ Código existe | ✅ Essencial | 🔴 Crítica | - | **Não testado - considerar do zero** |
+| **RAG (PostgreSQL + pgvector)** | ⚠️ Código existe | ✅ Essencial | 🔴 Crítica | - | **Não testado - considerar do zero** |
+| **MAS (Preservação)** | ⚠️ Código existe | ✅ Essencial | 🟡 Alta | - | **Não testado - considerar do zero** |
+| **Replay Buffer** | ⚠️ Código existe | ✅ Essencial | 🟡 Alta | - | **Não testado - considerar do zero** |
+| **Feedback Emocional** | ⚠️ Código básico | ✅ Essencial | 🔴 Crítica | Médio | **Não testado - implementar do zero** |
+| **Análise Arquitetural** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Médio | **Implementar do zero** |
+| **Identificação de Padrões** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Médio | **Implementar do zero** |
+| **Generalização** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Alto | **Implementar do zero** |
+| **Transfer Learning** | ❌ Não existe | ✅ Essencial | 🔴 Crítica | Alto | **Implementar do zero** |
+| **Templates Arquiteturais** | ❌ Não existe | ✅ Essencial | 🟡 Alta | Baixo | **Implementar do zero** |
+| **Fine-tuning** | ⏳ Planejado | ⚠️ Futuro | 🔵 Baixa | Alto | Futuro |
+| **Consolidação Sono** | ⏳ Planejado | ⚠️ Futuro | 🔵 Baixa | Alto | Futuro |
+| **Backpropamine** | ❌ Não existe | ⚠️ Futuro | 🔵 Baixa | Muito Alto | Futuro |
+
+**⚠️ IMPORTANTE**: Código existente não foi testado nem validado. **Recomendação: Começar do zero** com testes desde o início.
 
 ---
 
 ## 🎯 Plano de Implementação MVP
 
-### Fase 1: Análise Arquitetural (Sprint 1-2)
+### ⚠️ Decisão Arquitetural: Começar do Zero
+
+**Justificativa**:
+- Código existente não foi testado nem validado
+- Testes falham por dependências e problemas de estrutura
+- Mais eficiente começar do zero com testes desde o início
+- Permite arquitetura limpa e bem testada
+
+**Abordagem**:
+- ✅ **Começar do zero** com arquitetura limpa
+- ✅ **Testes desde o início** (TDD)
+- ✅ **Validação contínua** de cada componente
+- ⚠️ **Reaproveitar conceitos**, não código
+
+---
+
+### Fase 1: Base e Feedback Emocional (Sprint 1-2)
+
+**Objetivo**: Base sólida com feedback emocional funcionando
+
+**Tarefas**:
+1. ✅ **Setup do Zero**
+   - Estrutura de projeto limpa
+   - Dependências mínimas
+   - Testes configurados (pytest)
+   - CI/CD básico
+
+2. ✅ **LLM Base (Do Zero)**
+   - Integração CodeLlama 3B
+   - Testes de carregamento
+   - Testes de geração
+   - Validação de qualidade
+
+3. ✅ **RAG (Do Zero)**
+   - PostgreSQL + pgvector setup
+   - Testes de conexão
+   - Testes de indexação
+   - Testes de busca
+
+4. ✅ **Feedback Emocional (Do Zero)**
+   - Análise de sentimento (RoBERTa)
+   - Detecção de emoções (frustração, satisfação, confiança)
+   - Integração com feedback implícito
+   - Testes de precisão
+
+5. ✅ **Feedback Implícito (Do Zero)**
+   - Captura de ações (aceitar/editar/deletar)
+   - Cálculo de recompensas
+   - Integração com emocional
+   - Testes de integração
+
+**Entregas**:
+- ✅ Base sólida e testada
+- ✅ Feedback emocional funcionando
+- ✅ Feedback implícito funcionando
+- ✅ Integração feedback emocional + implícito
+
+---
+
+### Fase 2: Análise Arquitetural (Sprint 3-4)
 
 **Objetivo**: Analisar estrutura e padrões de projetos
 
 **Tarefas**:
-1. ✅ **Parser de Estrutura**
+1. ✅ **Parser de Estrutura (Do Zero)**
    - Analisar estrutura de diretórios
    - Identificar organização de módulos
    - Extrair dependências
+   - Testes de precisão
 
-2. ✅ **Identificação de Padrões**
+2. ✅ **Identificação de Padrões (Do Zero)**
    - Padrões de design (MVC, Repository, etc.)
    - Padrões de comunicação (API, Events)
    - Padrões de dados (ORM, Migrations)
+   - Testes de identificação
 
-3. ✅ **Indexação no RAG**
+3. ✅ **Indexação no RAG (Do Zero)**
    - Indexar estrutura
    - Indexar padrões identificados
    - Indexar decisões arquiteturais
+   - Testes de indexação
 
-4. ✅ **Feedback System**
-   - Capturar aceitação/rejeição
-   - Aprender de feedback
-   - Melhorar identificação
+4. ✅ **Integração com Feedback**
+   - Usar feedback emocional para priorizar padrões
+   - Aprender de padrões que geram satisfação
+   - Evitar padrões que geram frustração
+   - Testes de integração
 
 **Entregas**:
-- ✅ Análise arquitetural funcionando
+- ✅ Análise arquitetural funcionando e testada
 - ✅ Padrões identificados e indexados
 - ✅ RAG com conhecimento arquitetural
+- ✅ Feedback emocional integrado
 
 ---
 
-### Fase 2: Aprendizado e Generalização (Sprint 3-4)
+### Fase 3: Aprendizado e Generalização (Sprint 5-6)
 
 **Objetivo**: Aprender padrões e generalizar para múltiplos projetos
 
 **Tarefas**:
-1. ✅ **Generalização de Padrões**
+1. ✅ **Generalização de Padrões (Do Zero)**
    - Identificar padrões comuns entre projetos
    - Extrair conceitos gerais
    - Criar abstrações
+   - Testes de generalização
 
-2. ✅ **Consolidação**
-   - Consolidar padrões aprendidos
-   - Preservar conhecimento importante (MAS)
-   - Reapresentar exemplos importantes (Replay)
+2. ✅ **MAS (Do Zero)**
+   - Preservar conhecimento importante
+   - Regularização durante aprendizado
+   - Integração com feedback emocional
+   - Testes de preservação
 
-3. ✅ **Transfer Learning**
+3. ✅ **Replay (Do Zero)**
+   - Reapresentar exemplos importantes
+   - Priorizar padrões que geram satisfação
+   - Balanceamento replay vs. novos dados
+   - Testes de replay
+
+4. ✅ **Transfer Learning (Do Zero)**
    - Identificar projetos similares
    - Aplicar padrões aprendidos
    - Adaptar ao novo contexto
-
-4. ✅ **Sugestões Arquiteturais**
-   - Sugerir estrutura para novos projetos
-   - Sugerir padrões aplicáveis
-   - Sugerir decisões arquiteturais
+   - Testes de transferência
 
 **Entregas**:
-- ✅ Generalização funcionando
+- ✅ Generalização funcionando e testada
 - ✅ Transfer learning entre projetos
-- ✅ Sugestões arquiteturais
+- ✅ MAS e Replay integrados
+- ✅ Feedback emocional guiando aprendizado
 
 ---
 
-### Fase 3: Geração e Refinamento (Sprint 5-6)
+### Fase 4: Geração e Refinamento (Sprint 7-8)
 
 **Objetivo**: Gerar código arquitetural e refinar sistema
 
 **Tarefas**:
-1. ✅ **Geração de Código Arquitetural**
+1. ✅ **Sugestões Arquiteturais (Do Zero)**
+   - Sugerir estrutura para novos projetos
+   - Sugerir padrões aplicáveis
+   - Sugerir decisões arquiteturais
+   - Testes de sugestões
+
+2. ✅ **Geração de Código Arquitetural (Do Zero)**
    - Gerar estrutura de projeto
    - Gerar módulos base
    - Gerar interfaces e configurações
+   - Testes de geração
 
-2. ✅ **Templates Arquiteturais**
+3. ✅ **Templates Arquiteturais (Do Zero)**
    - Templates para estruturas comuns
    - Templates para padrões
    - Templates para configurações
+   - Testes de templates
 
-3. ✅ **Otimização**
+4. ✅ **Otimização e Validação**
    - Performance
    - Precisão de sugestões
    - Qualidade de generalização
-
-4. ✅ **Testes**
    - Testes end-to-end
    - Validação com desenvolvedores
-   - Ajustes baseados em feedback
 
 **Entregas**:
 - ✅ MVP completo e estável
 - ✅ Geração de código arquitetural
 - ✅ Sistema testado e validado
+- ✅ Feedback emocional integrado em todo o fluxo
 
 ---
 
 ## 📋 Checklist MVP
 
-### ✅ Componentes Reaproveitáveis
+### ⚠️ Componentes Existentes (Não Testados - Considerar do Zero)
 
-- [x] **LLM Base (CodeLlama 3B)** - ✅ Já temos
-- [x] **RAG (PostgreSQL + pgvector)** - ✅ Já temos
-- [x] **MAS (Preservação)** - ✅ Já temos
-- [x] **Replay Buffer** - ✅ Já temos
-- [x] **Feedback System** - ✅ Estrutura existe
+- [ ] **LLM Base (CodeLlama 3B)** - ⚠️ Código existe mas não testado
+- [ ] **RAG (PostgreSQL + pgvector)** - ⚠️ Código existe mas não testado
+- [ ] **MAS (Preservação)** - ⚠️ Código existe mas não testado
+- [ ] **Replay Buffer** - ⚠️ Código existe mas não testado
+- [ ] **Feedback Emocional** - ⚠️ Código básico existe mas não testado
+- [ ] **Feedback Implícito** - ⚠️ Código existe mas não testado
 
-### ⏳ Componentes a Implementar
+**Decisão**: ⚠️ **Começar do zero** com testes desde o início
 
-- [ ] **Análise Arquitetural**
+### ⏳ Componentes a Implementar do Zero
+
+- [ ] **Setup Base**
+  - [ ] Estrutura de projeto limpa
+  - [ ] Dependências mínimas
+  - [ ] Testes configurados (pytest)
+  - [ ] CI/CD básico
+  
+- [ ] **LLM Base (Do Zero)**
+  - [ ] Integração CodeLlama 3B
+  - [ ] Testes de carregamento
+  - [ ] Testes de geração
+  - [ ] Validação de qualidade
+  
+- [ ] **RAG (Do Zero)**
+  - [ ] PostgreSQL + pgvector setup
+  - [ ] Testes de conexão
+  - [ ] Testes de indexação
+  - [ ] Testes de busca
+  
+- [ ] **Feedback Emocional (Do Zero)**
+  - [ ] Análise de sentimento (RoBERTa)
+  - [ ] Detecção de emoções (frustração, satisfação, confiança)
+  - [ ] Integração com feedback implícito
+  - [ ] Testes de precisão
+  
+- [ ] **Feedback Implícito (Do Zero)**
+  - [ ] Captura de ações (aceitar/editar/deletar)
+  - [ ] Cálculo de recompensas
+  - [ ] Integração com emocional
+  - [ ] Testes de integração
+  
+- [ ] **Análise Arquitetural (Do Zero)**
   - [ ] Parser de estrutura de diretórios
   - [ ] Identificação de padrões de design
   - [ ] Identificação de padrões de comunicação
   - [ ] Identificação de padrões de dados
   - [ ] Extração de decisões arquiteturais
+  - [ ] Testes de precisão
   
-- [ ] **Generalização**
+- [ ] **Generalização (Do Zero)**
   - [ ] Identificação de padrões comuns
   - [ ] Extração de conceitos gerais
   - [ ] Criação de abstrações
   - [ ] Consolidação de conhecimento
+  - [ ] Testes de generalização
   
-- [ ] **Transfer Learning**
+- [ ] **MAS (Do Zero)**
+  - [ ] Preservar conhecimento importante
+  - [ ] Regularização durante aprendizado
+  - [ ] Integração com feedback emocional
+  - [ ] Testes de preservação
+  
+- [ ] **Replay (Do Zero)**
+  - [ ] Reapresentar exemplos importantes
+  - [ ] Priorizar padrões que geram satisfação
+  - [ ] Balanceamento replay vs. novos dados
+  - [ ] Testes de replay
+  
+- [ ] **Transfer Learning (Do Zero)**
   - [ ] Identificação de projetos similares
   - [ ] Aplicação de padrões aprendidos
   - [ ] Adaptação ao novo contexto
   - [ ] Sugestões arquiteturais
+  - [ ] Testes de transferência
   
-- [ ] **Geração Arquitetural**
+- [ ] **Geração Arquitetural (Do Zero)**
   - [ ] Geração de estrutura
   - [ ] Geração de módulos base
   - [ ] Templates arquiteturais
   - [ ] Geração de configurações
+  - [ ] Testes de geração
 
 ---
 
@@ -560,6 +806,10 @@ graph TB
 ```mermaid
 sequenceDiagram
     participant DEV as Programador Arquiteto
+    participant EMOTION as Emoções
+    participant IMPLICIT as Feedback Implícito
+    participant EMOTIONAL as Feedback Emocional
+    participant INTEGRATE as Integração Feedback
     participant ANALYZE as Análise Arquitetural
     participant RAG as RAG (Padrões)
     participant GENERALIZE as Generalização
@@ -580,15 +830,36 @@ sequenceDiagram
     LLM->>SUGGEST: Sugestões arquiteturais
     SUGGEST->>DEV: Estrutura sugerida
     
-    DEV->>RAG: Feedback (aceita/rejeita)
-    RAG->>GENERALIZE: Melhora generalização
+    DEV->>EMOTION: Emoções (frustração/satisfação)
+    DEV->>IMPLICIT: Ação (aceita/edita/deleta)
+    IMPLICIT->>INTEGRATE: Feedback implícito (70%)
+    EMOTION->>EMOTIONAL: Detecta emoções
+    EMOTIONAL->>INTEGRATE: Feedback emocional (30%)
+    INTEGRATE->>GENERALIZE: Feedback integrado
+    INTEGRATE->>RAG: Prioriza padrões satisfatórios
+    GENERALIZE->>RAG: Melhora generalização
 ```
 
 ---
 
 ## 🎯 Diferenciais do MVP
 
-### 1. Foco em Arquitetura, Não Código
+### 1. Feedback Emocional Integrado
+
+**Outros Assistentes**:
+- ❌ Não processam emoções explicitamente
+- ❌ Não priorizam padrões por satisfação
+- ❌ Não evitam padrões que geram frustração
+
+**Nosso MVP**:
+- ✅ Detecta emoções do usuário (frustração, satisfação, confiança)
+- ✅ Prioriza padrões que geram satisfação
+- ✅ Evita padrões que geram frustração
+- ✅ Integra feedback emocional (30%) + implícito (70%)
+
+---
+
+### 2. Foco em Arquitetura, Não Código
 
 **Outros Assistentes**:
 - ❌ Focam em código de baixo nível
@@ -602,7 +873,7 @@ sequenceDiagram
 
 ---
 
-### 2. Transfer Learning Entre Projetos
+### 3. Transfer Learning Entre Projetos
 
 **Outros Assistentes**:
 - ❌ Aprendizado limitado a projeto atual
@@ -616,7 +887,7 @@ sequenceDiagram
 
 ---
 
-### 3. Aprendizado Contínuo Explícito
+### 4. Aprendizado Contínuo Explícito
 
 **Outros Assistentes**:
 - ⚠️ Aprendizado implícito
@@ -630,7 +901,7 @@ sequenceDiagram
 
 ---
 
-### 4. Preparação para o Futuro
+### 5. Preparação para o Futuro
 
 **Outros Assistentes**:
 - ❌ Focam em código atual
@@ -669,11 +940,26 @@ sequenceDiagram
 
 ### O Que É Essencial (MVP)
 
-1. ✅ **Análise Arquitetural** - Analisar estrutura e padrões
-2. ✅ **Aprendizado de Padrões** - Aprender e generalizar
-3. ✅ **Transfer Learning** - Aplicar em novos projetos
-4. ✅ **Sugestões Arquiteturais** - Sugerir estrutura e padrões
-5. ✅ **Geração Arquitetural** - Gerar código que implementa decisões
+1. ✅ **Feedback Emocional** - Processar emoções do usuário (frustração, satisfação, confiança)
+2. ✅ **Análise Arquitetural** - Analisar estrutura e padrões
+3. ✅ **Aprendizado de Padrões** - Aprender e generalizar (guiado por feedback emocional)
+4. ✅ **Transfer Learning** - Aplicar em novos projetos
+5. ✅ **Sugestões Arquiteturais** - Sugerir estrutura e padrões
+6. ✅ **Geração Arquitetural** - Gerar código que implementa decisões
+
+### ⚠️ Decisão Importante: Começar do Zero
+
+**Justificativa**:
+- Código existente não foi testado nem validado
+- Testes falham por dependências e problemas de estrutura
+- Mais eficiente começar do zero com testes desde o início
+- Permite arquitetura limpa e bem testada
+
+**Abordagem**:
+- ✅ **Começar do zero** com arquitetura limpa
+- ✅ **Testes desde o início** (TDD)
+- ✅ **Validação contínua** de cada componente
+- ✅ **Reaproveitar conceitos**, não código
 
 ### O Que Pode Ser Futuro
 
@@ -682,20 +968,52 @@ sequenceDiagram
 3. ⚠️ **Backpropamine** - Experimental, futuro
 4. ⚠️ **Processos Psicológicos** - Após MVP
 
-### Tecnologias Reaproveitáveis
+### Tecnologias e Conceitos Reaproveitáveis
 
-- ✅ **LLM Base** - Já temos
-- ✅ **RAG** - Já temos
-- ✅ **MAS** - Já temos
-- ✅ **Replay** - Já temos
-- ✅ **Feedback** - Estrutura existe
+**⚠️ IMPORTANTE**: Código existente não foi testado. **Reaproveitar conceitos, não código**.
 
-### Esforço Estimado
+**Conceitos que podemos reaproveitar**:
+- ✅ **Arquitetura RAG** - Conceito de PostgreSQL + pgvector
+- ✅ **Conceito MAS** - Preservação de conhecimento importante
+- ✅ **Conceito Replay** - Reapresentar exemplos importantes
+- ✅ **Conceito Feedback Emocional** - Análise de sentimento + emoções
+- ✅ **Conceito Feedback Implícito** - Ações do usuário (aceitar/editar/deletar)
 
-- **Fase 1 (Análise)**: 2-3 semanas
-- **Fase 2 (Aprendizado)**: 2-3 semanas
-- **Fase 3 (Geração)**: 1-2 semanas
-- **Total MVP**: 5-8 semanas
+**Código a reescrever do zero**:
+- ⚠️ **LLM Base** - Reescrever com testes
+- ⚠️ **RAG** - Reescrever com testes
+- ⚠️ **MAS** - Reescrever com testes
+- ⚠️ **Replay** - Reescrever com testes
+- ⚠️ **Feedback Emocional** - Reescrever com testes (com foco em emoções)
+- ⚠️ **Feedback Implícito** - Reescrever com testes
+
+### Esforço Estimado (Começando do Zero)
+
+- **Fase 1 (Base + Feedback Emocional)**: 3-4 semanas
+  - Setup do zero: 1 semana
+  - LLM Base: 1 semana
+  - RAG: 1 semana
+  - Feedback Emocional + Implícito: 1 semana
+  
+- **Fase 2 (Análise Arquitetural)**: 2-3 semanas
+  - Parser de estrutura: 1 semana
+  - Identificação de padrões: 1 semana
+  - Indexação: 1 semana
+  
+- **Fase 3 (Aprendizado e Generalização)**: 3-4 semanas
+  - Generalização: 1-2 semanas
+  - MAS: 1 semana
+  - Replay: 1 semana
+  - Transfer Learning: 1 semana
+  
+- **Fase 4 (Geração e Refinamento)**: 2-3 semanas
+  - Sugestões: 1 semana
+  - Geração: 1 semana
+  - Otimização e validação: 1 semana
+  
+- **Total MVP**: 10-14 semanas (2.5-3.5 meses)
+
+**Nota**: Tempo maior porque estamos começando do zero com testes desde o início.
 
 ---
 
@@ -730,7 +1048,73 @@ sequenceDiagram
 
 ---
 
+---
+
+## 📝 Notas de Implementação
+
+### ⚠️ Decisão: Começar do Zero
+
+**Justificativa**:
+- Código existente não foi testado nem validado
+- Testes falham por dependências e problemas de estrutura
+- Mais eficiente começar do zero com testes desde o início
+- Permite arquitetura limpa e bem testada
+
+**Abordagem**:
+- ✅ **Começar do zero** com arquitetura limpa
+- ✅ **Testes desde o início** (TDD - Test-Driven Development)
+- ✅ **Validação contínua** de cada componente
+- ✅ **Reaproveitar conceitos**, não código
+
+**Componentes a Reescrever**:
+- ⚠️ LLM Base - Reescrever com testes
+- ⚠️ RAG - Reescrever com testes
+- ⚠️ MAS - Reescrever com testes
+- ⚠️ Replay - Reescrever com testes
+- ⚠️ Feedback Emocional - Reescrever com foco em emoções
+- ⚠️ Feedback Implícito - Reescrever com testes
+
+---
+
+## 🔬 Pesquisa sobre Feedback Emocional
+
+### Papers Encontrados
+
+1. **RLHF (Reinforcement Learning from Human Feedback)**:
+   - Ouyang, L., et al. (2022). "Training language models to follow instructions with human feedback"
+   - Usado em ChatGPT, Claude
+   - Combina feedback explícito e implícito
+
+2. **Affective Computing**:
+   - Picard, R. (1997). "Affective Computing"
+   - Detecção de emoções em sistemas computacionais
+   - Aplicação em interação humano-computador
+
+3. **Emotion Detection in Text**:
+   - Alm, C. O., et al. (2005). "Emotions from text: machine learning for text-based emotion prediction"
+   - Detecção de emoções em texto
+   - Modelos especializados
+
+### Tecnologias para Feedback Emocional
+
+1. **Análise de Sentimento**:
+   - RoBERTa Sentiment Models
+   - Cardoso NLP Twitter-RoBERTa
+   - VADER Sentiment
+
+2. **Detecção de Emoções**:
+   - Emotion Detection Models
+   - Multi-label emotion classification
+   - Fine-tuned models para código
+
+3. **Integração com RL**:
+   - RLHF (Reinforcement Learning from Human Feedback)
+   - Reward shaping com emoções
+   - Policy gradient com feedback emocional
+
+---
+
 **Data**: 2025-01-27  
-**Versão**: 1.0  
+**Versão**: 1.1 (Atualizado com Feedback Emocional e Decisão de Começar do Zero)  
 **Status**: 🟡 Proposta MVP - Aguardando Aprovação
 
