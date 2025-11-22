@@ -12,7 +12,7 @@ Este documento diagrama a arquitetura de memória e consolidação do sistema np
 
 1. **Memória de Curto Prazo**: Rápida, volátil, consulta PostgreSQL para eficiência
 2. **Memória de Médio Prazo**: PostgreSQL + pgvector, consolida conhecimento
-3. **Memória de Longo Prazo**: Pesos da LLM, consolidados durante "sono"
+3. **Memória de Longo Prazo**: Cerebelo e LoRA Adapters, consolidados durante "sono" (LLM Base não é treinada)
 4. **Replay com Feedback Emocional**: Decide o que persiste e o que é descartado
 
 ---
@@ -31,8 +31,9 @@ graph TB
     end
     
     subgraph "Memória de Longo Prazo"
-        LLM_BASE[LLM Base<br/>CodeLlama 3B<br/>🧠 Pesos Consolidados<br/>💤 Durante Sono]
-        LORA[LoRA Adapters<br/>Pesos Especializados<br/>🎯 Contextos Específicos]
+        CEREBELO[Cerebelo<br/>100M-500M<br/>🧠 Pesos Consolidados<br/>💤 Durante Sono<br/>Essencial]
+        LORA[LoRA Adapters<br/>🧠 Pesos Consolidados<br/>💤 Durante Sono<br/>Essencial]
+        LLM_BASE[LLM Base<br/>CodeLlama 3B<br/>❌ NÃO Treinada<br/>Plug-and-Play]
     end
     
     subgraph "Sistema de Decisão"
@@ -43,12 +44,14 @@ graph TB
     CACHE -->|Consulta| POSTGRES
     WORKING -->|Consolida| POSTGRES
     POSTGRES -->|Busca| CACHE
-    POSTGRES -->|Durante Sono| LLM_BASE
+    POSTGRES -->|Durante Sono| CEREBELO
     POSTGRES -->|Durante Sono| LORA
+    
+    Note over LLM_BASE: LLM Base NÃO é treinada<br/>(plug-and-play)
     
     FEEDBACK -->|Prioriza| REPLAY
     REPLAY -->|Decide| POSTGRES
-    REPLAY -->|Filtra| LLM_BASE
+    REPLAY -->|Filtra| CEREBELO
     REPLAY -->|Filtra| LORA
     
     style CACHE fill:#ffcccc
@@ -72,7 +75,8 @@ sequenceDiagram
     participant POSTGRES as Memória Média<br/>(PostgreSQL)
     participant REPLAY as Replay Buffer<br/>(Decisão)
     participant FEEDBACK as Feedback Emocional
-    participant LLM as Memória Longa<br/>(Pesos LLM)
+    participant CEREBELO as Cerebelo<br/>(Pesos Consolidados<br/>Essencial)
+    participant LORA as LoRA Adapters<br/>(Pesos Consolidados<br/>Essencial)
     
     USER->>CACHE: Interação (query/código)
     CACHE->>POSTGRES: Consulta busca semântica
@@ -92,11 +96,15 @@ sequenceDiagram
         REPLAY->>REPLAY: Descarta ou marca como evitar
     end
     
-    Note over POSTGRES,LLM: Durante "Sono" (Consolidação)
+    Note over POSTGRES,CEREBELO: Durante "Sono" (Consolidação)
     POSTGRES->>REPLAY: Conhecimento consolidado
     REPLAY->>REPLAY: Filtra por feedback emocional
-    REPLAY->>LLM: Conhecimento importante
-    LLM->>LLM: Atualiza pesos (fine-tuning/consolidação)
+    REPLAY->>CEREBELO: Conhecimento importante (essencial)
+    REPLAY->>LORA: Conhecimento importante (essencial)
+    CEREBELO->>CEREBELO: Atualiza pesos (fine-tuning/consolidação)
+    LORA->>LORA: Atualiza pesos (fine-tuning/consolidação)
+    
+    Note over CEREBELO,LORA: LLM Base NÃO é treinada<br/>(plug-and-play)
 ```
 
 ---
@@ -122,9 +130,13 @@ graph LR
     end
     
     subgraph "Fase 4: Armazenamento"
-        LLM_BASE[LLM Base<br/>Pesos Consolidados]
-        LORA[LoRA Adapters<br/>Pesos Especializados]
+        CEREBELO[Cerebelo<br/>Pesos Consolidados<br/>Essencial]
+        LORA[LoRA Adapters<br/>Pesos Especializados<br/>Essencial]
+        MOD[Modulador<br/>Opcional]
+        ATT[Atenção<br/>Opcional]
     end
+    
+    Note over TRAIN: LLM Base NÃO é treinada<br/>(plug-and-play)
     
     POSTGRES --> FILTER
     REPLAY --> FILTER
@@ -133,8 +145,10 @@ graph LR
     FILTER --> PRIORITY
     PRIORITY --> MAS
     MAS --> TRAIN
-    TRAIN --> LLM_BASE
+    TRAIN --> CEREBELO
     TRAIN --> LORA
+    TRAIN --> MOD
+    TRAIN --> ATT
     
     style POSTGRES fill:#ccffcc
     style REPLAY fill:#ffffcc
@@ -312,19 +326,27 @@ graph TB
 
 ---
 
-## 🧠 Detalhamento: Memória de Longo Prazo (Pesos da LLM)
+## 🧠 Detalhamento: Memória de Longo Prazo (Cerebelo e LoRA Adapters)
 
 ### Componentes
 
-1. **LLM Base (CodeLlama 3B)**
-   - 🧠 **Pesos Consolidados**: Conhecimento geral
-   - 💤 **Atualização**: Durante "sono" (consolidação)
-   - 📊 **Método**: Fine-tuning ou consolidação incremental
+1. **Cerebelo (100M-500M)**
+   - 🧠 **Pesos Consolidados**: Padrões específicos importantes
+   - 💤 **Atualização**: Durante "sono" (consolidação) - ESSENCIAL
+   - 📊 **Método**: Backpropamine + fine-tuning incremental
+   - ✅ **Treinar**: Sim, mas apenas durante sono
 
 2. **LoRA Adapters**
    - 🎯 **Pesos Especializados**: Contextos específicos
-   - 💤 **Atualização**: Durante "sono" (consolidação)
+   - 💤 **Atualização**: Durante "sono" (consolidação) - ESSENCIAL
    - 📊 **Método**: Treinamento de adapters especializados
+   - ✅ **Treinar**: Sim, mas apenas durante sono
+
+3. **LLM Base (CodeLlama 3B)**
+   - 🧠 **Pesos Estáticos**: Não são modificados
+   - ❌ **Atualização**: NÃO é treinada (plug-and-play)
+   - 📊 **Método**: Usa como está, pode ser trocada
+   - ❌ **Treinar**: Não, permanece como modelo pré-treinado
 
 ### Processo de Consolidação Durante "Sono"
 
@@ -335,8 +357,10 @@ sequenceDiagram
     participant FEEDBACK as Feedback Emocional<br/>(Priorização)
     participant MAS as MAS<br/>(Preservação)
     participant TRAIN as Treinamento<br/>(Fine-tuning)
-    participant LLM as LLM Base<br/>(Pesos Consolidados)
-    participant LORA as LoRA Adapters<br/>(Pesos Especializados)
+    participant CEREBELO as Cerebelo<br/>(Pesos Consolidados<br/>Essencial)
+    participant LORA as LoRA Adapters<br/>(Pesos Especializados<br/>Essencial)
+    participant MOD as Modulador<br/>(Opcional)
+    participant ATT as Atenção<br/>(Opcional)
     
     Note over POSTGRES: Período de "Sono" Inicia
     POSTGRES->>REPLAY: Extrai conhecimento acumulado
@@ -351,8 +375,11 @@ sequenceDiagram
     MAS->>TRAIN: Dataset de treinamento
     TRAIN->>TRAIN: Fine-tuning com MAS<br/>(Preserva conhecimento antigo)
     
-    TRAIN->>LLM: Atualiza pesos do modelo base
-    TRAIN->>LORA: Cria/atualiza adapters especializados
+    Note over TRAIN: LLM Base NÃO é treinada<br/>(plug-and-play)
+    TRAIN->>CEREBELO: Consolida padrões importantes (essencial)
+    TRAIN->>LORA: Cria/atualiza adapters especializados (essencial)
+    TRAIN->>MOD: Atualiza Modulador (se necessário, opcional)
+    TRAIN->>ATT: Atualiza Atenção (se necessário, opcional)
     
     Note over LLM,LORA: Consolidação Completa
 ```
@@ -465,7 +492,12 @@ graph TB
         EXTRACT --> FILTER[Filtra por Feedback<br/>Score > 0.7]
         FILTER --> MAS[MAS<br/>Preserva Importante]
         MAS --> TRAIN[Treinamento<br/>Fine-tuning]
-        TRAIN --> LLM[Atualiza Pesos LLM]
+        TRAIN --> CEREBELO[Atualiza Cerebelo<br/>Essencial]
+        TRAIN --> LORA[Atualiza LoRA Adapters<br/>Essencial]
+        TRAIN --> MOD[Atualiza Modulador<br/>Opcional]
+        TRAIN --> ATT[Atualiza Atenção<br/>Opcional]
+        
+        Note over TRAIN: LLM Base NÃO é treinada<br/>(plug-and-play)
     end
     
     POSTGRES_STORE --> EXTRACT
@@ -489,7 +521,7 @@ graph TB
 
 | Característica | Curto Prazo | Médio Prazo | Longo Prazo |
 |----------------|-------------|-------------|-------------|
-| **Componente** | Cache/Working Memory | PostgreSQL + pgvector | Pesos LLM |
+| **Componente** | Cache/Working Memory | PostgreSQL + pgvector | Cerebelo + LoRA Adapters |
 | **Velocidade** | ⚡ Muito Rápida | 🐢 Rápida | 🐌 Lenta (consulta) |
 | **Persistência** | ⚠️ Volátil | ✅ Persistente | ✅ Persistente |
 | **Capacidade** | 📏 Limitada (MBs) | 📊 Grande (GBs) | 🧠 Muito Grande (GBs) |
@@ -525,7 +557,8 @@ graph TB
    - Extrai conhecimento do PostgreSQL
    - Filtra por feedback emocional (prioriza satisfação)
    - Usa MAS para preservar conhecimento importante
-   - Treina/consolida nos pesos da LLM (base + adapters)
+   - Treina/consolida apenas Cerebelo e LoRA Adapters (essencial)
+   - LLM Base NÃO é treinada (plug-and-play)
 
 ### Decisões de Design
 
@@ -533,7 +566,7 @@ graph TB
 - ✅ **Cache rápido**: Memória de curto prazo volátil
 - ✅ **Feedback emocional**: Prioriza conhecimento que gera satisfação
 - ✅ **Replay**: Filtra o que vai ser persistido
-- ✅ **Sono**: Consolida conhecimento importante nos pesos da LLM
+- ✅ **Sono**: Consolida conhecimento importante apenas em Cerebelo e LoRA Adapters (não na LLM Base)
 - ✅ **MAS**: Preserva conhecimento antigo durante consolidação
 
 ---

@@ -84,14 +84,18 @@ graph TB
     INTEGRATE --> BACKPROP
     
     REPLAY --> POSTGRES
-    REPLAY --> MAS
-    BACKPROP --> MAS
-    MAS --> LLM_BASE
+    
+    Note over REPLAY,BACKPROP: Durante uso: Apenas coleta feedback<br/>Sem treinamento
     
     POSTGRES --> SLEEP
     SLEEP --> FT
-    FT --> LLM_BASE
+    FT --> CEREBELO
     FT --> LORA
+    
+    Note over FT: LLM Base NÃO é treinada<br/>(plug-and-play)
+    
+    MAS --> CEREBELO
+    MAS --> LORA
     
     RESPONSE --> USER
     
@@ -327,8 +331,10 @@ graph TB
     end
     
     subgraph "Fase 5: Consolidação"
-        LLM_BASE[LLM Base<br/>Pesos Atualizados]
-        LORA[LoRA Adapters<br/>Consolidados]
+        CEREBELO[Cerebelo<br/>Consolidado<br/>Essencial]
+        LORA[LoRA Adapters<br/>Consolidados<br/>Essencial]
+        MOD[Modulador<br/>Opcional]
+        ATT[Atenção<br/>Opcional]
     end
     
     POSTGRES --> FILTER
@@ -338,8 +344,12 @@ graph TB
     MAS --> IMPORTANCE
     IMPORTANCE --> DATASET
     DATASET --> FT
-    FT --> LLM_BASE
+    FT --> CEREBELO
     FT --> LORA
+    FT --> MOD
+    FT --> ATT
+    
+    Note over FT: LLM Base NÃO é treinada<br/>(plug-and-play)
     
     style POSTGRES fill:#ccffcc
     style REPLAY fill:#ffffcc
@@ -365,7 +375,11 @@ graph TB
 2. **Filtragem**: Filtra por feedback emocional (prioriza satisfação)
 3. **Preservação**: MAS preserva conhecimento antigo importante
 4. **Treinamento**: Fine-tuning incremental com MAS
-5. **Consolidação**: Atualiza pesos da LLM Base e LoRA Adapters
+5. **Consolidação**: 
+   - ❌ **LLM Base NÃO é treinada** (plug-and-play)
+   - ✅ **Cerebelo** é consolidado (essencial)
+   - ✅ **LoRA Adapters** são consolidados (essencial)
+   - ⚠️ **Modulador** e **Atenção** são atualizados apenas se necessário (opcional)
 
 ---
 
@@ -380,14 +394,14 @@ graph TB
 5. **Modulador** seleciona adapters apropriados
 6. **Resposta** é gerada e apresentada
 
-### Durante o Dia: Aprendizado Contínuo
+### Durante o Dia: Coleta de Feedback (Sem Treinamento)
 
 1. **Usuário** interage, recebe sugestões
 2. **Feedback** é capturado (emocional + implícito)
 3. **Replay Buffer** avalia importância
 4. **Conhecimento importante** é persistido no PostgreSQL
-5. **Backpropamine** (se ativo) atualiza Modulador
-6. **MAS** preserva conhecimento antigo
+5. **Nenhum treinamento durante uso** (apenas coleta de feedback)
+6. Treinamento acontece apenas durante sono
 
 ### Noite: Consolidação (Sono)
 
@@ -396,15 +410,18 @@ graph TB
 3. **Replay Buffer** filtra por feedback emocional
 4. **MAS** preserva conhecimento antigo importante
 5. **Fine-tuning** consolida conhecimento
-6. **Pesos da LLM** são atualizados
-7. **LoRA Adapters** são consolidados
+6. **LLM Base NÃO é treinada** (permanece plug-and-play)
+7. **Cerebelo** é consolidado (essencial)
+8. **LoRA Adapters** são consolidados (essencial)
+9. **Modulador** e **Atenção** são atualizados apenas se necessário (opcional)
 
 ### Próximo Dia: Conhecimento Consolidado
 
-1. **LLM Base** tem conhecimento consolidado
-2. **LoRA Adapters** estão atualizados
-3. **Modulador** aprendeu padrões de seleção
-4. **Sistema** está mais inteligente
+1. **LLM Base** permanece igual (plug-and-play, não treinada)
+2. **Cerebelo** tem padrões importantes consolidados (treinado durante sono)
+3. **LoRA Adapters** estão atualizados (treinados durante sono)
+4. **Modulador** pode ter aprendido padrões (se treinado, opcional)
+5. **Sistema** está mais inteligente (Cerebelo e LoRA melhorados)
 
 ---
 
@@ -417,7 +434,21 @@ graph TB
 | **Backpropamine** | Plasticidade real (mudanças de pesos) | ⚠️ Experimental | 🔵 Baixa |
 | **Feedback Emocional** | Prioriza conhecimento satisfatório | ⚠️ Básico | 🔴 Crítica |
 | **Feedback Implícito** | Recompensa baseada em ações | ✅ Implementado | 🔴 Crítica |
-| **Consolidação Sono** | Transferência hipocampo → córtex | ⚠️ Planejado | 🟡 Alta |
+| **Consolidação Sono** | Transferência hipocampo → Cerebelo/LoRA | ⚠️ Planejado | 🟡 Alta |
+
+---
+
+## 📊 Classificação: O Que Treinar e O Que Não Treinar
+
+### Resumo da Classificação
+
+| LLM | Treinar? | Quando? | Justificativa |
+|-----|----------|---------|---------------|
+| **LLM Base** | ❌ **NÃO** | Nunca | Plug-and-play, pode ser trocada |
+| **Cerebelo** | ✅ **SIM** | Apenas no sono | Essencial para padrões específicos |
+| **Modulador** | ⚠️ **OPCIONAL** | Apenas no sono (se necessário) | Pode funcionar apenas com inferência |
+| **Atenção Neuromodulada** | ⚠️ **OPCIONAL** | Apenas no sono (se necessário) | Pode usar atenção padrão do LLM |
+| **LoRA Adapters** | ✅ **SIM** | Apenas no sono | Essencial para adaptação por contexto |
 
 ---
 
@@ -431,18 +462,19 @@ graph TB
 
 ### Funcionamento Diário
 
-1. **Interação**: Usuário → Cache → PostgreSQL → LLM → Resposta
-2. **Feedback**: Emocional (30%) + Implícito (70%) → Replay → PostgreSQL
-3. **Aprendizado**: Backpropamine atualiza Modulador, MAS preserva
-4. **Consolidação**: Durante sono, conhecimento vai para pesos da LLM
+1. **Interação**: Usuário → Cache → PostgreSQL → LLM → Resposta (inferência apenas)
+2. **Feedback**: Emocional (30%) + Implícito (70%) → Replay → PostgreSQL (sem treinamento)
+3. **Aprendizado**: Apenas coleta de feedback durante uso (sem treinamento)
+4. **Consolidação**: Durante sono, conhecimento vai para Cerebelo e LoRA Adapters (não para LLM Base)
 
 ### Fluxo Contínuo
 
 ```
-Interação → Feedback → Aprendizado → Consolidação → Melhoria
-    ↓           ↓            ↓              ↓            ↓
-  Query    Emoção +    Backpropamine    Sono      LLM Mais
-  Código   Ação        + MAS + Replay            Inteligente
+Interação → Feedback → Coleta → Consolidação (Sono) → Melhoria
+    ↓           ↓          ↓            ↓                  ↓
+  Query    Emoção +    PostgreSQL    Cerebelo +      Sistema Mais
+  Código   Ação        (sem treino)  LoRA treinam    Inteligente
+                                      (LLM Base não)
 ```
 
 ---

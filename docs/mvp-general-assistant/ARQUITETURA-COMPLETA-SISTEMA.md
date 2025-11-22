@@ -29,9 +29,10 @@ Este documento apresenta a **arquitetura completa** do sistema npllm, incluindo:
 **Características**:
 - ✅ **Modelo**: CodeLlama 3B quantizado 4-bit
 - ✅ **Tamanho**: ~3 bilhões de parâmetros
-- ✅ **Status**: Estático (não muda durante uso)
-- ✅ **Atualização**: Apenas durante "sono" (consolidação)
+- ✅ **Status**: Estático (não muda nunca)
+- ❌ **Atualização**: NÃO é treinada (plug-and-play)
 - ✅ **Uso**: Processamento principal de código e arquitetura
+- ✅ **Pode ser trocada**: Por qualquer LLM compatível sem perder conhecimento
 
 **Onde é Usado**:
 - Geração de código arquitetural
@@ -53,8 +54,8 @@ Este documento apresenta a **arquitetura completa** do sistema npllm, incluindo:
 **Características**:
 - ✅ **Modelo**: Pequeno (1-5M parâmetros)
 - ✅ **Tamanho**: Muito menor que LLM Base
-- ✅ **Status**: Pode usar Backpropamine (experimental)
-- ✅ **Atualização**: Durante uso (se Backpropamine) ou durante sono
+- ⚠️ **Status**: Pode funcionar apenas com inferência
+- ⚠️ **Atualização**: Opcional, apenas durante sono (se necessário)
 - ✅ **Uso**: Decisão de qual adapter usar
 
 **Onde é Usado**:
@@ -78,8 +79,8 @@ Este documento apresenta a **arquitetura completa** do sistema npllm, incluindo:
 **Características**:
 - ⚠️ **Modelo**: Médio (100M-500M parâmetros)
 - ⚠️ **Status**: Experimental (Fase 2)
-- ⚠️ **Atualização**: Backpropamine (mudanças reais de pesos)
-- ⚠️ **Uso**: Padrões específicos, automatização
+- ✅ **Atualização**: Essencial treinar, mas apenas durante sono
+- ✅ **Uso**: Padrões específicos, automatização
 
 **Onde é Usado**:
 - Padrões arquiteturais específicos
@@ -103,7 +104,7 @@ Este documento apresenta a **arquitetura completa** do sistema npllm, incluindo:
 - ✅ **Modelo**: Pesos adicionais (não modelo completo)
 - ✅ **Tamanho**: Muito menor que modelo base
 - ✅ **Status**: Múltiplos adapters por contexto
-- ✅ **Atualização**: Durante uso (treinamento incremental)
+- ✅ **Atualização**: Essencial treinar, mas apenas durante sono
 - ✅ **Uso**: Especialização por contexto (ex: Odoo, Django, React)
 
 **Onde é Usado**:
@@ -201,15 +202,19 @@ graph TB
     INTEGRATE --> RL
     
     REPLAY --> POSTGRES
-    RL --> MODULATOR
-    RL --> BACKPROP
-    BACKPROP --> MAS
-    MAS --> LLM_BASE
+    
+    Note over RL,BACKPROP: Durante uso: Apenas coleta feedback<br/>Sem treinamento
     
     POSTGRES --> SLEEP
     SLEEP --> FT
-    FT --> LLM_BASE
+    FT --> CEREBELO
     FT --> LORA
+    FT --> MODULATOR
+    
+    Note over FT: LLM Base NÃO é treinada<br/>(plug-and-play)
+    
+    MAS --> CEREBELO
+    MAS --> LORA
     
     LLM_BASE --> THINK
     THINK --> EMOT_PROC
@@ -379,14 +384,29 @@ sequenceDiagram
 
 ## 🎯 Resumo: Quantas LLMs e Onde
 
-| LLM | Tamanho | Função | Onde Usado | Atualização |
-|-----|---------|--------|------------|-------------|
-| **LLM Base** | 3B | Raciocínio principal | PFC, processamento principal | Durante sono |
-| **Modulador** | 1-5M | Seleção de adapters | PFC, controle de adapters | Durante uso (se Backpropamine) ou sono |
-| **Cerebelo** | 100M-500M | Padrões específicos | Automatização, padrões | Backpropamine (experimental) |
-| **LoRA Adapters** | Pesos adicionais | Adaptação rápida | Especialização por contexto | Durante uso e sono |
+| LLM | Tamanho | Função | Onde Usado | Treinar? | Quando? |
+|-----|---------|--------|------------|----------|---------|
+| **LLM Base** | 3B | Raciocínio principal | PFC, processamento principal | ❌ **NÃO** | Nunca (plug-and-play) |
+| **Modulador** | 1-5M | Seleção de adapters | PFC, controle de adapters | ⚠️ **OPCIONAL** | Apenas no sono (se necessário) |
+| **Cerebelo** | 100M-500M | Padrões específicos | Automatização, padrões | ✅ **SIM** | Apenas no sono |
+| **Atenção Neuromodulada** | Mecanismo | Controle contextual | Atenção do LLM Base | ⚠️ **OPCIONAL** | Apenas no sono (se necessário) |
+| **LoRA Adapters** | Pesos adicionais | Adaptação rápida | Especialização por contexto | ✅ **SIM** | Apenas no sono |
 
 **Total**: 2-3 modelos principais + múltiplos adapters
+
+---
+
+## 📊 Classificação: O Que Treinar e O Que Não Treinar
+
+### Resumo da Classificação
+
+| LLM | Treinar? | Quando? | Justificativa |
+|-----|----------|---------|---------------|
+| **LLM Base** | ❌ **NÃO** | Nunca | Plug-and-play, pode ser trocada por LLM melhor/mais recente |
+| **Cerebelo** | ✅ **SIM** | Apenas no sono | Essencial para padrões específicos, mas não durante uso |
+| **Modulador** | ⚠️ **OPCIONAL** | Apenas no sono (se necessário) | Pode funcionar apenas com inferência |
+| **Atenção Neuromodulada** | ⚠️ **OPCIONAL** | Apenas no sono (se necessário) | Pode usar atenção padrão do LLM |
+| **LoRA Adapters** | ✅ **SIM** | Apenas no sono | Essencial para adaptação por contexto |
 
 ---
 
@@ -403,13 +423,13 @@ sequenceDiagram
 7. **LoRA Adapters** adaptam resposta
 8. **LLM Base** gera resposta final
 
-### Fase 2: Feedback
+### Fase 2: Feedback (Sem Treinamento)
 
 1. **Usuário** fornece feedback (emocional + implícito)
 2. **Sistema de Feedback** integra (70% + 30%)
 3. **Replay Buffer** avalia importância
-4. **RL PPO** atualiza política do Modulador
-5. **Conhecimento importante** é persistido no PostgreSQL
+4. **Conhecimento importante** é persistido no PostgreSQL
+5. **Nenhum treinamento durante uso** (apenas coleta de feedback)
 
 ### Fase 3: Consolidação (Sono)
 
@@ -417,8 +437,10 @@ sequenceDiagram
 2. **Replay Buffer** filtra por feedback emocional
 3. **MAS** preserva conhecimento antigo importante
 4. **Fine-tuning** consolida conhecimento
-5. **Pesos da LLM** são atualizados
-6. **LoRA Adapters** são consolidados
+5. **LLM Base NÃO é treinada** (permanece plug-and-play)
+6. **Cerebelo** é consolidado (essencial)
+7. **LoRA Adapters** são consolidados (essencial)
+8. **Modulador** e **Atenção** são atualizados apenas se necessário (opcional)
 
 ---
 
@@ -458,7 +480,7 @@ O sistema npllm utiliza:
 3. **Sistema de memória hierárquica**:
    - Curto prazo (cache)
    - Médio prazo (PostgreSQL)
-   - Longo prazo (pesos da LLM)
+   - Longo prazo (Cerebelo e LoRA Adapters, não LLM Base)
 
 4. **Sistema de aprendizado integrado**:
    - MAS (preservação)
@@ -474,7 +496,7 @@ O sistema npllm utiliza:
 6. **Sistema de consolidação**:
    - Durante sono
    - Filtragem por feedback emocional
-   - Transferência para pesos da LLM
+   - Transferência apenas para Cerebelo e LoRA Adapters (não para LLM Base)
 
 ---
 
