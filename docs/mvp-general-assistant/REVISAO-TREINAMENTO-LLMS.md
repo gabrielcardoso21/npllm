@@ -119,10 +119,6 @@ graph TB
     BACKPROP --> FT
     LLM_BASE --> USER
     
-    Note over FT: LLM Base nao treinada
-    Note over RL,BACKPROP: Apenas durante sono
-    Note over REPLAY: Coleta feedback sem treinar
-    
     style LLM_BASE fill:#ffcccc
     style MODULATOR fill:#fff4e1
     style CEREBELO fill:#ccffcc
@@ -136,6 +132,10 @@ graph TB
     style INTEGRATE fill:#ffccff
     style SLEEP fill:#ccccff
     style FT fill:#ccccff
+    
+    Note over FT: LLM Base nao treinada
+    Note over RL,BACKPROP: Apenas durante sono
+    Note over REPLAY: Coleta feedback sem treinar
 ```
 
 **Legenda do Diagrama**:
