@@ -136,7 +136,7 @@ No cérebro humano, a plasticidade sináptica ocorre através de:
 ## Casos de Uso
 
 ### 1. Aprendizado Contínuo
-- Modelos que aprendem novas tarefas sem esquecer anteriores
+   - Modelos que aprendem novas tarefas sem esquecer anteriores
 - Adaptação a novos domínios sem retreino completo
 
 ### 2. Memória de Trabalho

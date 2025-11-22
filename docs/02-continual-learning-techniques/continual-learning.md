@@ -186,7 +186,7 @@ Aprendizado contínuo (também chamado lifelong learning) refere-se à capacidad
 1. **Avalanche**: Framework completo para continual learning
    - https://avalanche.continualai.org
    - Implementações de muitos métodos
-   - Benchmarks padronizados
+- Benchmarks padronizados
 
 2. **Continuum**: Framework para continual learning
    - https://github.com/Continvvm/continuum
