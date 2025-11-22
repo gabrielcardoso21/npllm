@@ -65,7 +65,9 @@ logs/
 *.log
 
 # Models and Model Cache - CRITICAL: Não commitar modelos!
+# Ignore models/ na raiz, mas permita src/models/ (código Python)
 models/
+!src/models/
 *.bin
 *.safetensors
 *.pt
