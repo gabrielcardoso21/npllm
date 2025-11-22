@@ -1,42 +1,52 @@
-# Arquitetura Simplificada Final
+# Arquitetura Final do Sistema
 
 **Data**: 2025-01-27  
 **Versão**: 1.0  
-**Status**: ✅ Baseado em Pesquisa Técnica
+**Status**: ✅ Arquitetura Simplificada Final
 
 ---
 
 ## 📋 Objetivo
 
-Documentar a arquitetura simplificada final baseada em pesquisa técnica aprofundada e recomendações.
+Este documento define a arquitetura final simplificada do sistema npllm, baseada em pesquisa técnica aprofundada e decisões interativas. O sistema foi simplificado significativamente, removendo componentes desnecessários e mantendo apenas o essencial.
 
 ---
 
-## 🎯 Decisões Finais (Baseadas em Pesquisa)
+## 🎯 Decisões Finais
 
-### ✅ Componentes Mantidos (Essenciais)
+### ✅ Componentes Essenciais (6)
 
 1. **LLM Base (CodeLlama 3B)**
    - Não treina (plug-and-play)
    - Pode ser trocada por qualquer LLM compatível
+   - Função: Raciocínio principal e geração de código
 
-2. **LoRA Adapters**
-   - Treina apenas durante sono
+2. **Seletor de Adapter**
    - Seleção direta por contexto (extensão de arquivo/estrutura de projeto)
+   - Não treina (apenas regras/heurísticas)
+   - Função: Seleciona adapter apropriado para o contexto
 
-3. **PostgreSQL + pgvector**
+3. **LoRA Adapters**
+   - Treina apenas durante sono
+   - Especialização por contexto (Python, Odoo, Django, etc.)
+   - Função: Revisa e ajusta respostas do LLM Base
+
+4. **PostgreSQL + pgvector**
    - Armazena feedback e contexto
    - Permite busca semântica
+   - Função: Memória de médio prazo
 
-4. **Análise Emocional (RoBERTa)**
-   - Captura emoção do usuário
+5. **Análise Emocional (RoBERTa)**
+   - Captura emoção do usuário (satisfação, frustração, confiança)
    - Análise automática + feedback explícito quando disponível
+   - Função: Guia aprendizado priorizando padrões satisfatórios
 
-5. **Sistema de Sono**
-   - Consolidação durante inatividade
+6. **Sistema de Sono**
+   - Consolidação durante inatividade (30 minutos)
    - Fine-tuning tradicional com replay de exemplos
+   - Função: Atualiza LoRA Adapters com conhecimento aprendido
 
-### ❌ Componentes Removidos (Não Necessários)
+### ❌ Componentes Removidos (7)
 
 1. **Modulador**: Seleção direta de adapter é suficiente
 2. **Atenção Neuromodulada**: Atenção padrão do LLM é suficiente
@@ -48,15 +58,15 @@ Documentar a arquitetura simplificada final baseada em pesquisa técnica aprofun
 
 ---
 
-## 🏗️ Arquitetura Simplificada
+## 🏗️ Arquitetura Completa
 
-### Diagrama Completo
+### Diagrama do Sistema
 
 ```mermaid
 graph TB
     subgraph "Interação"
         USER[Usuário]
-        LLM[LLM Base<br/>CodeLlama 3B<br/>Inferência Apenas<br/>Nao Treina]
+        LLM[LLM Base<br/>CodeLlama 3B<br/>Inferência Apenas<br/>Não Treina]
         SELECTOR[Seletor de Adapter<br/>Por Contexto<br/>Extensão/Projeto]
         ADAPTER[LoRA Adapter<br/>Revisa Resposta<br/>Treina no Sono]
         RESPONSE[Resposta Final]
@@ -106,7 +116,7 @@ graph TB
 
 ---
 
-## 🔄 Fluxo Detalhado
+## 🔄 Fluxos Detalhados
 
 ### 1. Interação (Durante Uso)
 
@@ -352,17 +362,41 @@ def consolidate_during_sleep():
 
 ---
 
-## 🎯 Próximos Passos
+## 📚 Justificativas Técnicas
 
-1. ✅ Pesquisa técnica completa
-2. ✅ Arquitetura simplificada definida
-3. ⏳ Atualizar diagramas nos documentos existentes
-4. ⏳ Documentar decisões finais e justificativas
-5. ⏳ Implementar sistema simplificado
+### Por Que Remover Modulador?
+
+- **LoRA Papers** (Hu et al., 2021): Múltiplos adapters podem ser selecionados por heurísticas simples
+- **AdapterHub** (Pfeiffer et al., 2020): Seleção direta é padrão da indústria
+- **Prática Comum**: Seleção baseada em extensão de arquivo/estrutura de projeto é eficaz
+
+### Por Que Remover Atenção Neuromodulada?
+
+- **Attention Is All You Need** (Vaswani et al., 2017): Atenção padrão já é muito poderosa
+- **Fine-Tuning Papers**: Fine-tuning com RLHF é mais eficaz que modulação de atenção
+- **LoRA Papers**: LoRA adapta comportamento indiretamente, não precisa modulação explícita
+
+### Por Que Remover Cerebelo?
+
+- **LoRA Papers** (Hu et al., 2021): LoRA permite especialização por tarefa/domínio
+- **Parameter-Efficient Transfer Learning** (Houlsby et al., 2019): Adapters são suficientes para especialização
+- **Continual Learning Papers**: LoRA adapters podem aprender padrões incrementais
+
+### Por Que Usar Apenas Fine-tuning Tradicional?
+
+- **Fine-Tuning Papers**: Fine-tuning tradicional é comprovado e estável
+- **Differentiable Plasticity Papers** (Miconi et al., 2018): Ainda experimental para LLMs grandes
+- **Prática Comum**: Para produção, fine-tuning tradicional é preferido
+
+### Por Que Replay ao Invés de MAS?
+
+- **Experience Replay Papers** (Rolnick et al., 2019): Replay é mais simples que MAS
+- **Continual Learning with LoRA**: LoRA + Replay é suficiente
+- **Prática Comum**: Replay é padrão para continual learning
 
 ---
 
 **Data de Criação**: 2025-01-27  
 **Última Atualização**: 2025-01-27  
-**Status**: ✅ Arquitetura Simplificada Final Definida
+**Status**: ✅ Arquitetura Final Simplificada Definida
 
