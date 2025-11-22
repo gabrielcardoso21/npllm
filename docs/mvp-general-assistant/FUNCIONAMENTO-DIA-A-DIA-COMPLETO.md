@@ -248,12 +248,11 @@ graph TB
     MAS --> FT
     RL --> FT
     BACKPROP --> FT
-    
-    Note over FT: LLM Base nao é treinada<br/>plug-and-play
-    Note over RL,BACKPROP: RL e Backpropamine<br/>só durante sono
-    Note over REPLAY: Durante uso: Apenas coleta feedback<br/>Sem treinamento de modelos
-    
     LLM_BASE --> USER
+    
+    Note over FT: LLM Base nao treinada
+    Note over RL,BACKPROP: Apenas durante sono
+    Note over REPLAY: Coleta feedback sem treinar
     
     style LLM_BASE fill:#ffcccc
     style MODULATOR fill:#fff4e1
