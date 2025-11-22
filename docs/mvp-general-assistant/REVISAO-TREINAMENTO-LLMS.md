@@ -39,6 +39,121 @@ Este documento resume as decisões tomadas sobre **o que treinar e o que não tr
 
 ---
 
+## 🏗️ Arquitetura Completa: Diagrama Mermaid
+
+O diagrama abaixo mostra a arquitetura completa do sistema após as alterações, destacando o que é treinado e quando:
+
+```mermaid
+graph TB
+    subgraph "Entrada"
+        USER[Usuário<br/>Query/Código/Feedback]
+    end
+    
+    subgraph "Memória"
+        CACHE[Cache Rápido<br/>Memória Curta]
+        WORKING[Memória Trabalho<br/>Contexto Atual]
+        POSTGRES[PostgreSQL + pgvector<br/>Hipocampo<br/>Memória Média]
+    end
+    
+    subgraph "LLMs Principais"
+        LLM_BASE[LLM Base<br/>CodeLlama 3B<br/>PFC - Raciocínio<br/>Nao Treinada]
+        MODULATOR[Modulador<br/>1-5M parâmetros<br/>Seleção Adapters<br/>Opcional]
+        CEREBELO[Cerebelo*<br/>100M-500M<br/>Padrões Específicos<br/>Essencial]
+        ATTENTION[Atenção Neuromodulada*<br/>Controle Contextual<br/>Opcional]
+    end
+    
+    subgraph "Adaptação"
+        LORA[LoRA Adapters<br/>Adaptação Rápida<br/>Múltiplos Contextos<br/>Essencial]
+    end
+    
+    subgraph "Aprendizado Real"
+        MAS[MAS<br/>Preservação<br/>Durante Sono]
+        REPLAY[Replay Buffer<br/>Memórias Importantes<br/>Coleta Durante Uso]
+        BACKPROP[Backpropamine*<br/>Plasticidade Real<br/>Apenas Durante Sono]
+        RL[RL PPO<br/>Sistema Dopaminérgico<br/>Apenas Durante Sono]
+    end
+    
+    subgraph "Feedback"
+        IMPLICIT[Feedback Implícito<br/>70%]
+        EMOTIONAL[Feedback Emocional<br/>30%]
+        INTEGRATE[Integração Feedback]
+    end
+    
+    subgraph "Consolidação Apenas Durante Sono"
+        SLEEP[Consolidação Durante Sono<br/>Hipocampo para Cerebelo/LoRA]
+        FT[Fine-tuning Incremental<br/>Cerebelo + LoRA<br/>Modulador + Atenção opcional]
+    end
+    
+    USER --> CACHE
+    CACHE --> POSTGRES
+    POSTGRES --> WORKING
+    WORKING --> LLM_BASE
+    
+    LLM_BASE --> MODULATOR
+    MODULATOR --> LORA
+    LORA --> LLM_BASE
+    
+    LLM_BASE --> ATTENTION
+    ATTENTION --> LLM_BASE
+    
+    POSTGRES --> CEREBELO
+    CEREBELO --> POSTGRES
+    
+    USER --> IMPLICIT
+    USER --> EMOTIONAL
+    IMPLICIT --> INTEGRATE
+    EMOTIONAL --> INTEGRATE
+    INTEGRATE --> REPLAY
+    
+    REPLAY --> POSTGRES
+    
+    POSTGRES --> SLEEP
+    SLEEP --> FT
+    FT --> CEREBELO
+    FT --> LORA
+    FT --> MODULATOR
+    FT --> ATTENTION
+    
+    MAS --> FT
+    RL --> FT
+    BACKPROP --> FT
+    LLM_BASE --> USER
+    
+    Note over FT: LLM Base nao treinada
+    Note over RL,BACKPROP: Apenas durante sono
+    Note over REPLAY: Coleta feedback sem treinar
+    
+    style LLM_BASE fill:#ffcccc
+    style MODULATOR fill:#fff4e1
+    style CEREBELO fill:#ccffcc
+    style ATTENTION fill:#fff4e1
+    style LORA fill:#ccffcc
+    style POSTGRES fill:#ccffcc
+    style MAS fill:#ccccff
+    style REPLAY fill:#ffffcc
+    style BACKPROP fill:#ccccff
+    style RL fill:#ccccff
+    style INTEGRATE fill:#ffccff
+    style SLEEP fill:#ccccff
+    style FT fill:#ccccff
+```
+
+**Legenda do Diagrama**:
+- **Vermelho** (`#ffcccc`): LLM Base - NÃO treinada (plug-and-play)
+- **Verde** (`#ccffcc`): Cerebelo e LoRA Adapters - Essenciais para treinar
+- **Amarelo claro** (`#fff4e1`): Modulador e Atenção - Opcionais
+- **Azul claro** (`#ccccff`): Componentes de consolidação (apenas durante sono)
+- **Amarelo** (`#ffffcc`): Replay Buffer - Coleta durante uso
+- **Rosa** (`#ffccff`): Integração de feedback
+
+**Notas Importantes**:
+- `*` = Componente experimental (Backpropamine, Cerebelo, Atenção Neuromodulada)
+- **Durante uso**: Apenas coleta de feedback, sem treinamento
+- **Durante sono**: Consolidação apenas de Cerebelo e LoRA (essenciais), Modulador e Atenção (opcionais)
+- **LLM Base**: Nunca é treinada, permanece plug-and-play
+
+---
+
 ## 🔄 Mudanças no Funcionamento
 
 ### Antes (Problema)
