@@ -584,31 +584,41 @@ graph TB
 
 ---
 
-## 📝 Checklist de Decisões Pendentes
+## 📝 Decisões Finais (Baseadas em Pesquisa Técnica)
 
 ### Fluxo Principal
-- [ ] Modulador: Manter ou remover?
-- [ ] Atenção Neuromodulada: Manter ou remover?
-- [ ] Cerebelo: Manter ou remover?
-- [ ] Seleção de Adapter: Como funciona?
+- [x] **Modulador**: ❌ **REMOVER** - Seleção direta de adapter é suficiente (baseado em LoRA papers)
+- [x] **Atenção Neuromodulada**: ❌ **REMOVER** - Atenção padrão do LLM é suficiente (baseado em Attention Is All You Need)
+- [x] **Cerebelo**: ❌ **REMOVER** - LoRA Adapters já fazem especialização (baseado em LoRA papers)
+- [x] **Seleção de Adapter**: ✅ **SELECÇÃO DIRETA** - Por extensão de arquivo/estrutura de projeto (baseado em AdapterHub)
 
 ### Sistema de Feedback
-- [ ] Replay Buffer: Manter ou remover?
-- [ ] Integração 70%/30%: Manter ou simplificar?
-- [ ] Captura de Emoção: Apenas automática ou também explícita?
+- [x] **Replay Buffer**: ❌ **REMOVER** - Ir direto para PostgreSQL, filtrar no sono (baseado em Continual Learning papers)
+- [x] **Integração 70%/30%**: ✅ **MANTER** - Feedback implícito + emocional (baseado em RLHF papers)
+- [x] **Captura de Emoção**: ✅ **AMBOS** - Análise automática + feedback explícito quando disponível (baseado em RoBERTa papers)
 
 ### Sistema de Aprendizado
-- [ ] MAS: Manter ou usar Replay de Exemplos?
-- [ ] RL PPO: Manter ou remover?
-- [ ] Backpropamine: Manter ou apenas Fine-tuning tradicional?
+- [x] **MAS**: ❌ **REMOVER** - Replay de exemplos é suficiente (baseado em Continual Learning papers)
+- [x] **RL PPO**: ❌ **REMOVER** - Fine-tuning supervisionado é suficiente (baseado em RLHF papers)
+- [x] **Backpropamine**: ❌ **REMOVER** - Fine-tuning tradicional é suficiente (baseado em Fine-tuning papers)
 
 ### Sistema de Consolidação
-- [ ] Filtro de Feedback: Apenas positivo ou tudo com peso?
-- [ ] Preservação: MAS ou Replay de Exemplos?
+- [x] **Filtro de Feedback**: ✅ **APENAS POSITIVO** - Score > 0.7 (satisfação/confiança) (baseado em RLHF papers)
+- [x] **Preservação**: ✅ **REPLAY DE EXEMPLOS** - Misturar antigos com novos (baseado em Continual Learning papers)
+
+---
+
+---
+
+## 📚 Referência à Pesquisa Técnica
+
+Todas as decisões acima são baseadas em pesquisa técnica aprofundada documentada em:
+- **`PESQUISA-TECNICA-PERGUNTAS.md`**: Pesquisa técnica completa com papers e referências para cada pergunta
+- **`ARQUITETURA-SIMPLIFICADA-FINAL.md`**: Arquitetura simplificada final baseada nas decisões
 
 ---
 
 **Data de Criação**: 2025-01-27  
 **Última Atualização**: 2025-01-27  
-**Status**: 🔄 Em Revisão - Aguardando Decisões do Usuário
+**Status**: ✅ Decisões Baseadas em Pesquisa Técnica
 
