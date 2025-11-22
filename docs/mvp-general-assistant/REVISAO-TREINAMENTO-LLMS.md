@@ -132,10 +132,6 @@ graph TB
     style INTEGRATE fill:#ffccff
     style SLEEP fill:#ccccff
     style FT fill:#ccccff
-    
-    Note over FT: LLM Base nao treinada
-    Note over RL,BACKPROP: Apenas durante sono
-    Note over REPLAY: Coleta feedback sem treinar
 ```
 
 **Legenda do Diagrama**:
@@ -148,9 +144,10 @@ graph TB
 
 **Notas Importantes**:
 - `*` = Componente experimental (Backpropamine, Cerebelo, Atenção Neuromodulada)
-- **Durante uso**: Apenas coleta de feedback, sem treinamento
+- **Durante uso**: Apenas coleta de feedback, sem treinamento (Replay Buffer → PostgreSQL)
 - **Durante sono**: Consolidação apenas de Cerebelo e LoRA (essenciais), Modulador e Atenção (opcionais)
-- **LLM Base**: Nunca é treinada, permanece plug-and-play
+- **LLM Base**: Nunca é treinada, permanece plug-and-play (não recebe conexões de FT)
+- **RL e Backpropamine**: Apenas durante sono (conectados apenas ao FT)
 
 ---
 
