@@ -447,16 +447,164 @@ sequenceDiagram
 
 ---
 
+## 📊 Resumo: Componentes Necessários vs. Opcionais (Baseado em Recomendações)
+
+### ✅ Componentes Essenciais (MVP)
+
+1. **LLM Base (CodeLlama 3B)**
+   - Função: Raciocínio principal, geração de código
+   - Status: Não treina (plug-and-play)
+   - Justificativa: Base do sistema, pode ser trocada
+
+2. **LoRA Adapters**
+   - Função: Adaptação por contexto, revisão de respostas
+   - Status: Treina apenas durante sono
+   - Justificativa: Essencial para aprendizado e especialização
+
+3. **PostgreSQL + pgvector**
+   - Função: Armazenar feedback e contexto
+   - Status: Persistência
+   - Justificativa: Memória de médio prazo, busca semântica
+
+4. **Análise Emocional (RoBERTa)**
+   - Função: Capturar emoção do usuário
+   - Status: Inferência apenas
+   - Justificativa: Feedback emocional é essencial
+
+5. **Sistema de Sono**
+   - Função: Consolidação durante inatividade
+   - Status: Fine-tuning incremental
+   - Justificativa: Aprendizado sem overhead durante uso
+
+### ⚠️ Componentes Opcionais (Avaliar Necessidade)
+
+1. **Modulador**
+   - Status: Questionável
+   - Alternativa: Seleção direta de adapter
+   - Decisão: Aguardando resposta do usuário
+
+2. **Atenção Neuromodulada**
+   - Status: Questionável
+   - Alternativa: Atenção padrão do LLM
+   - Decisão: Aguardando resposta do usuário
+
+3. **Cerebelo**
+   - Status: Questionável
+   - Alternativa: LoRA Adapters já fazem isso
+   - Decisão: Aguardando resposta do usuário
+
+4. **Replay Buffer**
+   - Status: Questionável
+   - Alternativa: Ir direto para PostgreSQL
+   - Decisão: Aguardando resposta do usuário
+
+5. **MAS (Memory Aware Synapses)**
+   - Status: Questionável
+   - Alternativa: Replay de exemplos antigos
+   - Decisão: Aguardando resposta do usuário
+
+6. **RL PPO**
+   - Status: Questionável
+   - Alternativa: Fine-tuning supervisionado
+   - Decisão: Aguardando resposta do usuário
+
+7. **Backpropamine**
+   - Status: Questionável
+   - Alternativa: Fine-tuning tradicional
+   - Decisão: Aguardando resposta do usuário
+
+### ❌ Componentes Removidos (Não Necessários)
+
+- Nenhum ainda (aguardando decisões do usuário)
+
+---
+
 ## 🎯 Próximos Passos
 
 1. ✅ Criar documento de revisão interativa
-2. ⏳ Revisar fluxo principal com usuário
-3. ⏳ Revisar sistema de feedback com usuário
-4. ⏳ Revisar sistema de aprendizado com usuário
-5. ⏳ Identificar componentes realmente necessários
-6. ⏳ Simplificar arquitetura
-7. ⏳ Atualizar diagramas
-8. ⏳ Documentar decisões finais
+2. ✅ Revisar fluxo principal com perguntas
+3. ✅ Revisar sistema de feedback com perguntas
+4. ✅ Revisar sistema de aprendizado com perguntas
+5. ⏳ **Aguardar respostas do usuário** para identificar componentes realmente necessários
+6. ⏳ Simplificar arquitetura baseado nas respostas
+7. ⏳ Atualizar diagramas com fluxo simplificado
+8. ⏳ Documentar decisões finais e justificativas
+
+---
+
+---
+
+## 🎨 Diagrama do Fluxo Simplificado Proposto (Baseado em Recomendações)
+
+```mermaid
+graph TB
+    subgraph "Interação"
+        USER[Usuário]
+        LLM[LLM Base<br/>CodeLlama 3B<br/>Inferência Apenas]
+        ADAPTER[LoRA Adapter<br/>Revisa Resposta]
+        RESPONSE[Resposta Final]
+    end
+    
+    subgraph "Feedback"
+        EMOTION[Análise Emocional<br/>RoBERTa]
+        POSTGRES[PostgreSQL<br/>Armazena Feedback]
+    end
+    
+    subgraph "Aprendizado Sono"
+        TRIGGER[Trigger Sono<br/>Inatividade]
+        FILTER[Filtro<br/>Feedback Positivo]
+        FT[Fine-tuning<br/>Incremental]
+        UPDATE[Atualiza<br/>LoRA Adapters]
+    end
+    
+    USER -->|Mensagem| LLM
+    LLM -->|Resposta Bruta| ADAPTER
+    ADAPTER -->|Resposta Revisada| RESPONSE
+    RESPONSE --> USER
+    
+    RESPONSE -->|Reação| EMOTION
+    EMOTION -->|Feedback| POSTGRES
+    
+    TRIGGER -->|Detecta| POSTGRES
+    POSTGRES -->|Extrai| FILTER
+    FILTER -->|Filtra Positivo| FT
+    FT -->|Treina| UPDATE
+    UPDATE -->|Atualiza| ADAPTER
+    
+    style LLM fill:#ffcccc
+    style ADAPTER fill:#ccffcc
+    style POSTGRES fill:#ccffcc
+    style FT fill:#ccccff
+```
+
+**Legenda**:
+- **Vermelho**: LLM Base (não treina)
+- **Verde**: Componentes que aprendem (Adapter, PostgreSQL, Fine-tuning)
+- **Azul**: Processo de consolidação (sono)
+
+---
+
+## 📝 Checklist de Decisões Pendentes
+
+### Fluxo Principal
+- [ ] Modulador: Manter ou remover?
+- [ ] Atenção Neuromodulada: Manter ou remover?
+- [ ] Cerebelo: Manter ou remover?
+- [ ] Seleção de Adapter: Como funciona?
+
+### Sistema de Feedback
+- [ ] Replay Buffer: Manter ou remover?
+- [ ] Integração 70%/30%: Manter ou simplificar?
+- [ ] Captura de Emoção: Apenas automática ou também explícita?
+
+### Sistema de Aprendizado
+- [ ] MAS: Manter ou usar Replay de Exemplos?
+- [ ] RL PPO: Manter ou remover?
+- [ ] Backpropamine: Manter ou apenas Fine-tuning tradicional?
+
+### Sistema de Consolidação
+- [ ] Filtro de Feedback: Apenas positivo ou tudo com peso?
+- [ ] Preservação: MAS ou Replay de Exemplos?
 
 ---
 
