@@ -10,6 +10,13 @@ from typing import Dict, Any, Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field
 
+# Load .env file if it exists
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 class DatabaseConfig(BaseSettings):
     """Database configuration"""
