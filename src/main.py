@@ -1,0 +1,374 @@
+"""
+Main entry point for npllm
+Simplified initialization based on new architecture
+"""
+
+import argparse
+import sys
+from pathlib import Path
+from typing import Dict, Any, Optional
+
+from src.models.base_model import CodeLlamaBaseModel
+from src.adapters.selector import AdapterSelector
+from src.adapters.manager import AdapterManager
+from src.storage.postgres import PostgreSQLStorage
+from src.feedback.emotional import EmotionalAnalyzer
+from src.feedback.implicit import ImplicitFeedback, UserAction
+from src.learning.sleep import SleepSystem
+from src.learning.replay import ReplaySystem
+from src.learning.fine_tuning import FineTuningSystem
+from src.analysis.architecture import ArchitectureAnalyzer
+from src.analysis.patterns import PatternIdentifier
+from src.transfer.learning import TransferLearning
+from src.generation.architectural import ArchitecturalGenerator
+
+from src.utils.config import get_config
+from src.utils.logging import get_logger
+
+
+class NpllmSystem:
+    """
+    Sistema npllm simplificado
+    Integra todos os componentes essenciais
+    """
+    
+    def __init__(self, config_path: str = None):
+        """
+        Inicializa sistema completo
+        
+        Args:
+            config_path: Caminho para arquivo de configuração
+        """
+        self.logger = get_logger("npllm")
+        self.config = get_config(config_path)
+        
+        self.logger.info("Initializing npllm system (new architecture)...")
+        
+        # 1. LLM Base (não treina)
+        self.logger.info("Loading base model...")
+        self.base_model = CodeLlamaBaseModel()
+        
+        # 2. Seletor de Adapter (não treina)
+        self.logger.info("Initializing adapter selector...")
+        self.selector = AdapterSelector()
+        
+        # 3. Adapter Manager
+        self.logger.info("Initializing adapter manager...")
+        self.adapter_manager = AdapterManager(self.base_model)
+        
+        # 4. PostgreSQL Storage
+        self.logger.info("Initializing PostgreSQL storage...")
+        self.storage = PostgreSQLStorage()
+        
+        # 5. Análise Emocional
+        self.logger.info("Initializing emotional analyzer...")
+        self.emotional_analyzer = EmotionalAnalyzer()
+        
+        # 6. Feedback Implícito
+        self.logger.info("Initializing implicit feedback...")
+        self.implicit_feedback = ImplicitFeedback()
+        
+        # 7. Sistema de Replay
+        self.logger.info("Initializing replay system...")
+        self.replay = ReplaySystem()
+        
+        # 8. Sistema de Fine-tuning
+        self.logger.info("Initializing fine-tuning system...")
+        self.fine_tuning = FineTuningSystem(self.adapter_manager)
+        
+        # 9. Sistema de Sono
+        self.logger.info("Initializing sleep system...")
+        self.sleep = SleepSystem(
+            storage=self.storage,
+            replay=self.replay,
+            fine_tuning=self.fine_tuning,
+            emotional_analyzer=self.emotional_analyzer,
+            implicit_feedback=self.implicit_feedback
+        )
+        
+        # 10. Análise Arquitetural
+        self.logger.info("Initializing architecture analyzer...")
+        self.architecture_analyzer = ArchitectureAnalyzer()
+        
+        # 11. Identificação de Padrões
+        self.logger.info("Initializing pattern identifier...")
+        self.pattern_identifier = PatternIdentifier()
+        
+        # 12. Transfer Learning
+        self.logger.info("Initializing transfer learning...")
+        self.transfer_learning = TransferLearning(self.storage)
+        
+        # 13. Geração Arquitetural
+        self.logger.info("Initializing architectural generator...")
+        self.generator = ArchitecturalGenerator(self.base_model)
+        
+        self.logger.info("npllm system initialized successfully")
+    
+    def process_query(
+        self,
+        query: str,
+        project_path: str = None,
+        file_path: str = None
+    ) -> Dict[str, Any]:
+        """
+        Processa query do usuário
+        
+        Fluxo simplificado:
+        1. Usuário → LLM Base
+        2. LLM Base → Seletor → Adapter
+        3. Adapter → Resposta Final
+        4. Resposta → Feedback → PostgreSQL
+        
+        Args:
+            query: Query do usuário
+            project_path: Caminho do projeto (opcional)
+            file_path: Caminho do arquivo (opcional)
+        
+        Returns:
+            Resposta com metadados
+        """
+        self.logger.info(f"Processing query: {query[:50]}...")
+        
+        # Registra atividade (para sistema de sono)
+        self.sleep.record_activity()
+        
+        # 1. LLM Base processa (inferência apenas)
+        response_raw = self.base_model.generate(query, max_length=512)
+        
+        # 2. Seletor escolhe adapter
+        project_structure = None
+        if project_path:
+            project_structure = {"path": project_path}
+        
+        adapter_name = self.selector.select(file_path=file_path, project_structure=project_structure)
+        
+        # 3. Adapter revisa resposta (se disponível)
+        adapter = self.adapter_manager.get_adapter(adapter_name, prefer_stable=True)
+        if adapter:
+            # Adapter revisa resposta (simplificado - em produção, integração melhor)
+            # Por enquanto, usa resposta bruta (adapter será aplicado durante fine-tuning)
+            response = response_raw
+        else:
+            response = response_raw
+        
+        # Armazena adapter_name para feedback
+        self._last_adapter_name = adapter_name
+        
+        # 4. Retorna resposta
+        result = {
+            "response": response,
+            "adapter_used": adapter_name,
+            "raw_response": response_raw
+        }
+        
+        return result
+    
+    def capture_feedback(
+        self,
+        query: str,
+        response: str,
+        user_reaction: str,
+        user_action: Optional[UserAction] = None,
+        explicit_feedback: Optional[float] = None
+    ):
+        """
+        Captura feedback do usuário
+        
+        Integra 70% implícito + 30% emocional
+        
+        Args:
+            response: Resposta gerada
+            user_reaction: Reação do usuário (texto)
+            user_action: Ação do usuário (aceitar/editar/deletar)
+            explicit_feedback: Feedback explícito (opcional)
+        """
+        self.logger.info("Capturing user feedback...")
+        
+        # 1. Análise emocional
+        emotion_analysis = self.emotional_analyzer.analyze(user_reaction)
+        emotional_score = emotion_analysis.get("signal", 0.0)
+        
+        # Prioriza feedback explícito se disponível
+        if explicit_feedback is not None:
+            emotional_score = explicit_feedback
+        
+        # 2. Feedback implícito
+        implicit_score = 0.0
+        if user_action:
+            implicit_score = self.implicit_feedback.calculate_reward(user_action)
+        
+        # 3. Integração 70% implícito + 30% emocional
+        total_score = 0.7 * implicit_score + 0.3 * emotional_score
+        
+        # 4. Armazena no PostgreSQL (direto, sem buffer)
+        adapter_name = getattr(self, '_last_adapter_name', None)
+        self.storage.store_feedback(
+            prompt=query,  # Prompt original
+            response=response,
+            score=total_score,
+            implicit_score=implicit_score,
+            emotional_score=emotional_score,
+            context=adapter_name
+        )
+        
+        self.logger.info(f"Feedback stored (score: {total_score:.2f})")
+    
+    def analyze_project(self, project_path: str) -> Dict[str, Any]:
+        """
+        Analisa projeto arquiteturalmente
+        
+        Args:
+            project_path: Caminho do projeto
+        
+        Returns:
+            Análise arquitetural
+        """
+        return self.architecture_analyzer.analyze_project(project_path)
+    
+    def suggest_architecture(self, project_path: str) -> Dict[str, Any]:
+        """
+        Sugere arquitetura para novo projeto
+        
+        Args:
+            project_path: Caminho do projeto
+        
+        Returns:
+            Sugestão de arquitetura
+        """
+        # Obtém padrões aprendidos
+        # TODO: Buscar padrões do storage
+        
+        # Por enquanto, retorna sugestão básica
+        return self.transfer_learning.suggest_architecture(
+            project_path,
+            []  # TODO: Padrões aprendidos
+        )
+    
+    def trigger_sleep(self, force: bool = False):
+        """
+        Aciona consolidação manualmente (sono)
+        
+        Args:
+            force: Se True, força consolidação mesmo se sistema estiver ativo
+        """
+        self.logger.info("Triggering sleep consolidation...")
+        if force:
+            return self.sleep.trigger_manual()
+        else:
+            return self.sleep.consolidate()
+    
+    def get_system_status(self) -> Dict[str, Any]:
+        """
+        Retorna status do sistema
+        """
+        return {
+            "health": {
+                "healthy": True,
+                "warnings": []
+            },
+            "sleep_system": self.sleep.get_status(),
+            "storage_status": "connected" if self.storage else "disconnected"
+        }
+    
+    def close(self):
+        """Fecha sistema"""
+        self.logger.info("Closing npllm system...")
+        if hasattr(self, 'storage') and self.storage:
+            self.storage.close()
+        if hasattr(self, 'base_model') and self.base_model:
+            self.base_model.unload_model()
+        self.logger.info("System closed")
+
+
+def initialize_system(config_path: str = None):
+    """
+    Inicializa sistema completo
+    
+    Args:
+        config_path: Caminho para arquivo de configuração
+    
+    Returns:
+        Sistema inicializado
+    """
+    return NpllmSystem(config_path)
+
+
+def main():
+    """Main function"""
+    parser = argparse.ArgumentParser(description="NeuroPlastic Large Language Model")
+    parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to configuration file"
+    )
+    parser.add_argument(
+        "--query",
+        type=str,
+        default=None,
+        help="Process a single query"
+    )
+    parser.add_argument(
+        "--project-path",
+        type=str,
+        default=None,
+        help="Path to project"
+    )
+    parser.add_argument(
+        "--analyze",
+        type=str,
+        default=None,
+        help="Analyze project architecture"
+    )
+    parser.add_argument(
+        "--sleep",
+        action="store_true",
+        help="Trigger sleep consolidation"
+    )
+    
+    args = parser.parse_args()
+    
+    # Inicializa sistema
+    system = initialize_system(args.config)
+    
+    try:
+        if args.analyze:
+            # Analisa projeto
+            analysis = system.analyze_project(args.analyze)
+            print(f"Analysis complete for: {args.analyze}")
+            print(f"Patterns found: {analysis.get('patterns_found', [])}")
+        
+        elif args.sleep:
+            # Aciona sono
+            result = system.trigger_sleep()
+            print(f"Sleep consolidation: {result.get('status', 'unknown')}")
+        
+        elif args.query:
+            # Processa query
+            result = system.process_query(
+                query=args.query,
+                project_path=args.project_path
+            )
+            print(f"Response: {result['response']}")
+            print(f"Adapter used: {result['adapter_used']}")
+        
+        else:
+            # Modo interativo básico
+            print("npllm system (new architecture)")
+            print("Use --query to process queries")
+            print("Use --analyze to analyze projects")
+            print("Use --sleep to trigger consolidation")
+            print("Press Ctrl+C to stop.")
+            
+            import time
+            while True:
+                time.sleep(1)
+    
+    except KeyboardInterrupt:
+        print("\nStopping system...")
+    finally:
+        system.close()
+
+
+if __name__ == "__main__":
+    main()

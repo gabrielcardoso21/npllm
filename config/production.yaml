@@ -1,0 +1,48 @@
+# npllm Production Configuration
+# Extends default.yaml with production-specific settings
+
+# Model Configuration
+model:
+  device: "cpu"
+  max_memory: "6GB"
+  cache_size: 1000
+
+# Database Configuration (Production)
+database:
+  host: "${DB_HOST}"
+  port: "${DB_PORT}"
+  database: "${DB_NAME}"
+  user: "${DB_USER}"
+  password: "${DB_PASSWORD}"
+  pool_size: 10
+  max_overflow: 20
+  # Production-optimized PostgreSQL settings
+  shared_buffers: "512MB"
+  effective_cache_size: "2GB"
+  work_mem: "32MB"
+  maintenance_work_mem: "256MB"
+
+# Logging Configuration (Production)
+logging:
+  level: "WARNING"
+  format: "json"
+  file: "/var/log/npllm/npllm.log"
+  rotation: "100 MB"
+  retention: "30 days"
+
+# Monitoring Configuration (Production)
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  health_check_interval: 30
+  alert_thresholds:
+    memory: 0.90
+    cpu: 0.85
+    latency_p95: 5.0  # seconds
+
+# Resource Limits (Production)
+resources:
+  max_memory: "6.6GB"
+  max_cpu: 3.4
+  memory_warning_threshold: 0.80
+

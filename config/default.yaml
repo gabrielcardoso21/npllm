@@ -1,0 +1,144 @@
+# npllm Default Configuration
+
+# Model Configuration
+model:
+  base_model: "bigcode/starcoder2-3b"  # StarCoder2 3B - modelo público, especializado em código (melhor que StarCoder original)
+  quantization: "4bit"
+  quantization_type: "ggml"
+  device: "cpu"  # Will use CPU for inference
+  max_memory: "6GB"
+
+# Adapters Configuration
+adapters:
+  lora:
+    r: 16
+    lora_alpha: 32
+    lora_dropout: 0.1
+    target_modules: ["q_proj", "v_proj", "k_proj", "o_proj"]
+  versioning:
+    strategy: "stable_experimental"  # Only stable and experimental branches
+    default_branch: "stable"
+
+# Modulator Configuration
+modulator:
+  hidden_size: 512
+  num_layers: 2
+  num_adapters: 5  # Maximum number of adapters to manage
+  learning_rate: 1e-4
+
+# RAG Configuration (Optimized: On-Demand)
+rag:
+  enabled: true
+  on_demand: true  # Only activate when context is insufficient
+  chunk_size: 512
+  chunk_overlap: 50
+  top_k: 5
+  similarity_threshold: 0.7
+  consolidation:
+    enabled: true
+    frequency: "after_project"  # After each project completion
+
+# Embeddings Configuration (Plugable)
+embeddings:
+  provider: "sentence_transformers"  # Can be: sentence_transformers, codebert, etc.
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  device: "cpu"
+  batch_size: 32
+
+# PostgreSQL + pgvector Configuration
+database:
+  host: "localhost"
+  port: 5432
+  database: "npllm"
+  user: "npllm_user"
+  password: ""  # Set via environment variable
+  pool_size: 5
+  max_overflow: 10
+  # Optimized for low memory
+  shared_buffers: "256MB"
+  effective_cache_size: "1GB"
+  work_mem: "16MB"
+  maintenance_work_mem: "128MB"
+
+# Context Detection (Optimized: Metadata Only)
+context:
+  detection:
+    method: "metadata"  # Only metadata, no AST analysis
+    confirmation_enabled: true  # Ask user if uncertain
+    metadata_sources:
+      - "package.json"
+      - "requirements.txt"
+      - "pyproject.toml"
+      - "setup.py"
+      - "odoo"
+      - "django"
+      - "manage.py"
+
+# Feedback Configuration (Optimized: Implicit + Emotional)
+feedback:
+  implicit:
+    enabled: true
+    track_accept: true
+    track_edit: true
+    track_delete: true
+  emotional:
+    enabled: true
+    model: "sentiment"  # Simple sentiment analysis
+    provider: "transformers"
+    model_name: "cardiffnlp/twitter-roberta-base-sentiment-latest"
+
+# Learning Configuration
+learning:
+  continual_learning:
+    method: "mas"  # Memory Aware Synapses
+    replay:
+      enabled: true
+      buffer_size: 1000
+      replay_ratio: 0.2  # 20% of training data
+  consolidation:
+    frequency: "after_project"
+    mas_lambda: 0.5
+
+# Pipeline Configuration
+pipeline:
+  synchronous:
+    cache_enabled: true
+    cache_size: 500
+    timeout: 30  # seconds
+  asynchronous:
+    queue_backend: "redis"  # or "simple" for development
+    max_workers: 2
+
+# Metrics Configuration (Optimized: Behavior + Learning Only)
+metrics:
+  behavior:
+    enabled: true
+    track_acceptance_rate: true
+    track_edit_rate: true
+    track_time_to_accept: true
+  learning:
+    enabled: true
+    track_retention: true
+    track_adaptation: true
+    track_transfer: true
+
+# Logging Configuration
+logging:
+  level: "INFO"
+  format: "json"  # Structured logging
+  file: "logs/npllm.log"
+  rotation: "10 MB"
+  retention: "7 days"
+
+# Monitoring Configuration
+monitoring:
+  enabled: true
+  metrics_port: 9090
+  health_check_interval: 60  # seconds
+
+# Resource Limits (Optimized for 4 vCPU + 8GB RAM)
+resources:
+  max_memory: "6.6GB"
+  max_cpu: 3.4
+  memory_warning_threshold: 0.85  # Warn at 85% memory usage
+

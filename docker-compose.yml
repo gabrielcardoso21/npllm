@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: npllm_postgres
+    environment:
+      POSTGRES_DB: npllm
+      POSTGRES_USER: npllm_user
+      POSTGRES_PASSWORD: npllm_password
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U npllm_user -d npllm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - npllm_network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  npllm_network:
+    driver: bridge
