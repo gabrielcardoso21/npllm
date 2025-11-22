@@ -41,6 +41,10 @@ if [ ! -f .env ]; then
     fi
 fi
 
+# Criar diretório de dados se não existir
+mkdir -p data/postgres
+chmod 700 data/postgres 2>/dev/null || true
+
 # Verificar se container já está rodando
 if docker ps | grep -q npllm_postgres; then
     echo "✅ Container já está rodando"
