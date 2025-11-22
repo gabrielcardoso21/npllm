@@ -187,14 +187,14 @@ graph TB
     end
     
     subgraph "LLMs Principais"
-        LLM_BASE[LLM Base<br/>CodeLlama 3B<br/>PFC - Raciocínio<br/>❌ NÃO Treinada]
-        MODULATOR[Modulador<br/>1-5M parâmetros<br/>Seleção Adapters<br/>⚠️ Opcional]
-        CEREBELO[Cerebelo*<br/>100M-500M<br/>Padrões Específicos<br/>✅ Essencial]
-        ATTENTION[Atenção Neuromodulada*<br/>Controle Contextual<br/>⚠️ Opcional]
+        LLM_BASE[LLM Base<br/>CodeLlama 3B<br/>PFC - Raciocínio<br/>Nao Treinada]
+        MODULATOR[Modulador<br/>1-5M parâmetros<br/>Seleção Adapters<br/>Opcional]
+        CEREBELO[Cerebelo*<br/>100M-500M<br/>Padrões Específicos<br/>Essencial]
+        ATTENTION[Atenção Neuromodulada*<br/>Controle Contextual<br/>Opcional]
     end
     
     subgraph "Adaptação"
-        LORA[LoRA Adapters<br/>Adaptação Rápida<br/>Múltiplos Contextos<br/>✅ Essencial]
+        LORA[LoRA Adapters<br/>Adaptação Rápida<br/>Múltiplos Contextos<br/>Essencial]
     end
     
     subgraph "Aprendizado Real"
@@ -210,9 +210,9 @@ graph TB
         INTEGRATE[Integração Feedback]
     end
     
-    subgraph "Consolidação (Apenas Durante Sono)"
-        SLEEP[Consolidação Durante Sono<br/>Hipocampo → Cerebelo/LoRA]
-        FT[Fine-tuning<br/>Incremental<br/>Cerebelo + LoRA<br/>Modulador + Atenção (opcional)]
+    subgraph "Consolidação Apenas Durante Sono"
+        SLEEP[Consolidação Durante Sono<br/>Hipocampo para Cerebelo/LoRA]
+        FT[Fine-tuning Incremental<br/>Cerebelo + LoRA<br/>Modulador + Atenção opcional]
     end
     
     USER --> CACHE
@@ -238,8 +238,6 @@ graph TB
     
     REPLAY --> POSTGRES
     
-    Note over RL,BACKPROP: Durante uso: Apenas coleta feedback<br/>Sem treinamento de modelos
-    
     POSTGRES --> SLEEP
     SLEEP --> FT
     FT --> CEREBELO
@@ -247,13 +245,13 @@ graph TB
     FT --> MODULATOR
     FT --> ATTENTION
     
-    Note over FT: LLM Base NÃO é treinada<br/>(plug-and-play)
-    
     MAS --> FT
     RL --> FT
     BACKPROP --> FT
     
+    Note over FT: LLM Base nao é treinada<br/>plug-and-play
     Note over RL,BACKPROP: RL e Backpropamine<br/>só durante sono
+    Note over REPLAY: Durante uso: Apenas coleta feedback<br/>Sem treinamento de modelos
     
     LLM_BASE --> USER
     
