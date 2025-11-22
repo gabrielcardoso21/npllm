@@ -67,11 +67,26 @@ cp .env.docker .env
 ./EXECUTAR_TESTE_REAL.sh
 ```
 
+## 🚀 Deploy no Contabo
+
+Para fazer deploy nos servidores Contabo:
+
+```bash
+# Deploy automatizado
+./deploy/deploy.sh [IP_SERVIDOR] [USUARIO]
+
+# Exemplo
+./deploy/deploy.sh 161.97.123.192 root
+```
+
+Veja **[Documentação de Deploy](deploy/DEPLOY_CONTABO.md)** para instruções completas.
+
 ## 📚 Documentação
 
 ### Essencial
 - **[Arquitetura Final](docs/mvp-general-assistant/ARQUITETURA-FINAL.md)** - Arquitetura completa com diagramas
 - **[Plano de Implementação](docs/mvp-general-assistant/IMPLEMENTACAO-MVP.md)** - Plano detalhado de implementação
+- **[Deploy no Contabo](deploy/DEPLOY_CONTABO.md)** - Guia completo de deploy
 
 ### Setup
 - **[Docker Quick Start](DOCKER_QUICKSTART.md)** - Setup rápido com Docker

@@ -6,7 +6,7 @@ Simplified initialization based on new architecture
 import argparse
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from src.models.base_model import CodeLlamaBaseModel
 from src.adapters.selector import AdapterSelector
@@ -21,6 +21,11 @@ from src.analysis.architecture import ArchitectureAnalyzer
 from src.analysis.patterns import PatternIdentifier
 from src.transfer.learning import TransferLearning
 from src.generation.architectural import ArchitecturalGenerator
+from src.learning.course_manager import CourseManager, CourseStatus
+from src.data_collection.content_collector import ContentCollector
+from src.learning.content_processor import ContentProcessor
+from src.learning.course_learner import CourseLearner
+from src.learning.course_validator import CourseValidator
 
 from src.utils.config import get_config
 from src.utils.logging import get_logger
@@ -101,6 +106,14 @@ class NpllmSystem:
         # 13. Geração Arquitetural
         self.logger.info("Initializing architectural generator...")
         self.generator = ArchitecturalGenerator(self.base_model)
+        
+        # 14. Sistema de Cursos
+        self.logger.info("Initializing course system...")
+        self.course_manager = CourseManager(self.storage)
+        self.content_collector = ContentCollector()
+        self.content_processor = ContentProcessor()
+        self.course_learner = CourseLearner(self.base_model, self.storage)
+        self.course_validator = CourseValidator(self.base_model, self.storage, self.content_processor)
         
         self.logger.info("npllm system initialized successfully")
     
@@ -257,6 +270,262 @@ class NpllmSystem:
         else:
             return self.sleep.consolidate()
     
+    def create_course(
+        self,
+        name: str,
+        description: str,
+        source_type: str,
+        source_path: str
+    ) -> Dict[str, Any]:
+        """
+        Cria um novo curso
+        
+        Args:
+            name: Nome do curso
+            description: Descrição do curso
+            source_type: Tipo de fonte ('url', 'file', 'directory', 'text')
+            source_path: Caminho/URL da fonte
+        
+        Returns:
+            Dicionário com informações do curso criado
+        """
+        return self.course_manager.create_course(name, description, source_type, source_path)
+    
+    def list_courses(self) -> List[Dict[str, Any]]:
+        """
+        Lista todos os cursos
+        
+        Returns:
+            Lista de cursos
+        """
+        return self.course_manager.list_courses()
+    
+    def start_course_learning(self, course_id: int) -> Dict[str, Any]:
+        """
+        Inicia aprendizado de um curso
+        
+        Args:
+            course_id: ID do curso
+        
+        Returns:
+            Resultado do aprendizado
+        """
+        self.logger.info(f"Starting course learning for course {course_id}")
+        
+        # Atualiza status
+        self.course_manager.start_course(course_id)
+        
+        # Obtém curso
+        course = self.storage.get_course(course_id)
+        if not course:
+            raise ValueError(f"Course {course_id} not found")
+        
+        # Coleta conteúdo
+        self.logger.info(f"Collecting content from {course['source_type']}: {course['source_path']}")
+        
+        if course['source_type'] == 'url':
+            documents = self.content_collector.collect_from_url(course['source_path'])
+        elif course['source_type'] == 'file':
+            documents = self.content_collector.collect_from_file(course['source_path'])
+        elif course['source_type'] == 'directory':
+            documents = self.content_collector.collect_from_directory(course['source_path'])
+        elif course['source_type'] == 'text':
+            documents = self.content_collector.collect_from_text(course['source_path'])
+        else:
+            raise ValueError(f"Unknown source type: {course['source_type']}")
+        
+        # Processa e armazena conteúdo
+        total_chunks = 0
+        for doc in documents:
+            processed_chunks = self.content_processor.process_content(
+                content=doc['content'],
+                course_id=course_id,
+                metadata={
+                    'title': doc.get('title', ''),
+                    'type': doc.get('type', 'unknown'),
+                    'url': doc.get('url'),
+                    'file_path': doc.get('file_path')
+                }
+            )
+            
+            # Armazena cada chunk
+            for chunk in processed_chunks:
+                self.storage.store_course_content(
+                    course_id=course_id,
+                    title=chunk['metadata'].get('title', ''),
+                    content=chunk['content'],
+                    chunk_index=chunk['chunk_index'],
+                    metadata=chunk['metadata'],
+                    embedding=chunk['embedding']
+                )
+                total_chunks += 1
+        
+        self.logger.info(f"Stored {total_chunks} content chunks")
+        
+        # Aprende padrões e conceitos
+        learning_result = self.course_learner.learn_from_course(course_id)
+        
+        # Atualiza status para concluído
+        self.course_manager.update_course_status(course_id, CourseStatus.COMPLETED)
+        
+        return {
+            "status": "success",
+            "course_id": course_id,
+            "documents_collected": len(documents),
+            "chunks_stored": total_chunks,
+            "learning": learning_result
+        }
+    
+    def get_course_status(self, course_id: int) -> Dict[str, Any]:
+        """
+        Obtém status de um curso
+        
+        Args:
+            course_id: ID do curso
+        
+        Returns:
+            Status do curso
+        """
+        return self.course_manager.get_course_status(course_id)
+    
+    def get_course_concepts(self, course_id: int) -> List[Dict[str, Any]]:
+        """
+        Obtém conceitos aprendidos de um curso
+        
+        Args:
+            course_id: ID do curso
+        
+        Returns:
+            Lista de conceitos aprendidos
+        """
+        return self.course_learner.get_learned_concepts(course_id)
+    
+    def validate_course(
+        self,
+        course_id: int,
+        automatic: bool = False,
+        num_questions: int = 10,
+        validation_threshold: float = 0.75
+    ) -> Dict[str, Any]:
+        """
+        Valida um curso (manual ou automático)
+        
+        Args:
+            course_id: ID do curso
+            automatic: Se True, valida automaticamente. Se False, marca como validado manualmente
+            num_questions: Número de perguntas para validação automática
+            validation_threshold: Threshold mínimo para validação automática (0.0 a 1.0)
+        
+        Returns:
+            Resultado da validação
+        """
+        if automatic:
+            # Validação automática
+            self.logger.info(f"Starting automatic validation for course {course_id}")
+            validation_result = self.course_validator.validate_course(
+                course_id,
+                num_questions=num_questions,
+                validation_threshold=validation_threshold
+            )
+            
+            # Se passou, marca como validado
+            if validation_result.get('passed', False):
+                self.course_manager.validate_course(course_id)
+                validation_result['auto_validated'] = True
+            else:
+                validation_result['auto_validated'] = False
+            
+            return validation_result
+        else:
+            # Validação manual (apenas marca como validado)
+            return self.course_manager.validate_course(course_id)
+    
+    def process_query(
+        self,
+        query: str,
+        project_path: str = None,
+        file_path: str = None,
+        course_context: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Processa query do usuário
+        
+        Fluxo simplificado:
+        1. Usuário → LLM Base
+        2. LLM Base → Seletor → Adapter
+        3. Adapter → Resposta Final
+        4. Resposta → Feedback → PostgreSQL
+        
+        Args:
+            query: Query do usuário
+            project_path: Caminho do projeto (opcional)
+            file_path: Caminho do arquivo (opcional)
+            course_context: ID do curso para contexto (opcional)
+        
+        Returns:
+            Resposta com metadados
+        """
+        self.logger.info(f"Processing query: {query[:50]}...")
+        
+        # Registra atividade (para sistema de sono)
+        self.sleep.record_activity()
+        
+        # Se course_context fornecido, busca conteúdo relevante
+        context_content = ""
+        if course_context:
+            try:
+                # Gera embedding da query
+                query_embedding = self.content_processor.generate_embedding(query)
+                
+                # Busca conteúdo relevante do curso
+                relevant_chunks = self.storage.search_course_content(
+                    course_context,
+                    query_embedding,
+                    top_k=3
+                )
+                
+                # Adiciona contexto à query
+                if relevant_chunks:
+                    context_content = "\n\nRelevant context from course:\n"
+                    for chunk in relevant_chunks:
+                        context_content += f"- {chunk['title']}: {chunk['content'][:200]}...\n"
+                    
+                    query = f"{context_content}\n\nUser query: {query}"
+            except Exception as e:
+                self.logger.warning(f"Error retrieving course context: {e}")
+        
+        # 1. LLM Base processa (inferência apenas)
+        response_raw = self.base_model.generate(query, max_length=512)
+        
+        # 2. Seletor escolhe adapter
+        project_structure = None
+        if project_path:
+            project_structure = {"path": project_path}
+        
+        adapter_name = self.selector.select(file_path=file_path, project_structure=project_structure)
+        
+        # 3. Adapter revisa resposta (se disponível)
+        adapter = self.adapter_manager.get_adapter(adapter_name, prefer_stable=True)
+        if adapter:
+            # Adapter revisa resposta (simplificado - em produção, integração melhor)
+            # Por enquanto, usa resposta bruta (adapter será aplicado durante fine-tuning)
+            response = response_raw
+        else:
+            response = response_raw
+        
+        # Armazena adapter_name para feedback
+        self._last_adapter_name = adapter_name
+        
+        # 4. Retorna resposta
+        result = {
+            "response": response,
+            "adapter_used": adapter_name,
+            "raw_response": response_raw,
+            "course_context_used": course_context is not None
+        }
+        
+        return result
+    
     def get_system_status(self) -> Dict[str, Any]:
         """
         Retorna status do sistema
@@ -267,7 +536,8 @@ class NpllmSystem:
                 "warnings": []
             },
             "sleep_system": self.sleep.get_status(),
-            "storage_status": "connected" if self.storage else "disconnected"
+            "storage_status": "connected" if self.storage else "disconnected",
+            "courses_count": len(self.list_courses())
         }
     
     def close(self):

@@ -105,6 +105,13 @@ class SleepSystem:
             
             # 3. Replay: mistura exemplos antigos com novos
             old_examples = self.storage.get_important_examples()
+            
+            # Adiciona exemplos de cursos validados
+            course_examples = self._get_course_examples()
+            if course_examples:
+                self.logger.info(f"Adding {len(course_examples)} examples from validated courses")
+                old_examples.extend(course_examples)
+            
             dataset = self.replay.mix_examples(old_examples, positive_feedbacks)
             self.logger.info(f"Created dataset with {len(dataset)} examples (replay)")
             
@@ -140,6 +147,85 @@ class SleepSystem:
         """
         self.logger.info("Manual sleep consolidation triggered")
         return self.consolidate()
+    
+    def _get_course_examples(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        Obtém exemplos de cursos validados para uso no replay
+        
+        Args:
+            limit: Número máximo de exemplos
+        
+        Returns:
+            Lista de exemplos de cursos
+        """
+        try:
+            # Obtém todos os cursos validados
+            all_courses = self.storage.get_all_courses()
+            validated_courses = [
+                c for c in all_courses
+                if c.get('status') == 'validated'
+            ]
+            
+            # Coleta exemplos de cada curso
+            course_examples = []
+            for course in validated_courses:
+                examples = self.storage.get_course_examples_for_replay(
+                    course['id'],
+                    limit=limit // len(validated_courses) if validated_courses else limit
+                )
+                course_examples.extend(examples)
+            
+            return course_examples[:limit]
+        
+        except Exception as e:
+            self.logger.warning(f"Error getting course examples: {e}")
+            return []
+    
+    def consolidate_course_knowledge(self, course_id: int) -> Dict[str, Any]:
+        """
+        Consolida conhecimento de um curso específico durante o sono
+        
+        Args:
+            course_id: ID do curso
+        
+        Returns:
+            Resultado da consolidação
+        """
+        self.logger.info(f"Consolidating knowledge from course {course_id}")
+        
+        try:
+            # Obtém exemplos do curso
+            course_examples = self.storage.get_course_examples_for_replay(course_id, limit=100)
+            
+            if not course_examples:
+                return {
+                    "status": "no_data",
+                    "message": f"No examples found for course {course_id}"
+                }
+            
+            # Mistura com exemplos antigos
+            old_examples = self.storage.get_important_examples()
+            dataset = self.replay.mix_examples(old_examples, course_examples)
+            
+            # Fine-tuning
+            fine_tuning_result = self.fine_tuning.train_incremental(dataset)
+            update_result = self.fine_tuning.update_adapters()
+            
+            return {
+                "status": "success",
+                "course_id": course_id,
+                "examples_processed": len(course_examples),
+                "dataset_size": len(dataset),
+                "fine_tuning": fine_tuning_result,
+                "adapters_updated": update_result
+            }
+        
+        except Exception as e:
+            self.logger.error(f"Error consolidating course knowledge: {e}")
+            return {
+                "status": "error",
+                "message": str(e)
+            }
     
     def get_status(self) -> Dict[str, Any]:
         """
