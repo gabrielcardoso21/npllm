@@ -20,17 +20,25 @@ def query_api(
     query: str,
     project_path: Optional[str] = None,
     file_path: Optional[str] = None,
-    stream: bool = False
+    stream: bool = False,
+    direct: bool = False
 ) -> tuple[str, Optional[str]]:
     """
     Envia query para a API e retorna resposta
+    
+    Args:
+        direct: Se True, usa rota /query/direct (apenas modelo base)
     
     Returns:
         (response_text, error_message)
     """
     try:
-        url = f"{API_URL}/query"
-        params = {"stream": "true" if stream else "false"}
+        if direct:
+            url = f"{API_URL}/query/direct"
+            params = {}
+        else:
+            url = f"{API_URL}/query"
+            params = {"stream": "true" if stream else "false"}
         
         payload = {
             "query": query,

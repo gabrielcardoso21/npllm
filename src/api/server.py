@@ -150,6 +150,42 @@ async def health():
     return status
 
 
+@app.post("/query/direct")
+async def query_direct(request: QueryRequest):
+    """
+    Query direta no modelo base (sem adapters, sem processamento)
+    Útil para comparar respostas e testar performance
+    
+    Args:
+        request: Query request (apenas query é usado)
+    
+    Returns:
+        Resposta direta do modelo base
+    """
+    if not system:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Query direta no modelo base, sem adapters
+        logger.info(f"Direct query (model only): {request.query[:50]}...")
+        
+        response = system.base_model.generate(
+            request.query,
+            max_length=8192,
+            stream=False
+        )
+        
+        return {
+            "response": response,
+            "model_used": system.base_model.model_path,
+            "direct": True,
+            "adapter_used": None
+        }
+    except Exception as e:
+        logger.error(f"Error in direct query: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/query")
 async def process_query(request: QueryRequest, stream: bool = False):
     """
