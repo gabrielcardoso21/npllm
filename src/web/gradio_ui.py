@@ -82,7 +82,19 @@ def query_api(
             response.raise_for_status()
             
             result = response.json()
-            return result.get("response", ""), None
+            # Para rota direta, a resposta pode estar em "response" ou ser a própria resposta
+            if direct:
+                # Rota /query/direct retorna {"response": "...", "model_used": "...", ...}
+                response_text = result.get("response", "")
+            else:
+                # Rota /query normal retorna {"response": "...", "adapter_used": "...", ...}
+                response_text = result.get("response", "")
+            
+            if not response_text:
+                # Se não encontrou "response", tenta outros campos ou retorna o JSON completo como string
+                response_text = str(result) if result else ""
+            
+            return response_text, None
             
     except requests.exceptions.ConnectionError:
         error = "❌ Erro: Não foi possível conectar à API. Verifique se a API está rodando em http://localhost:8000"
