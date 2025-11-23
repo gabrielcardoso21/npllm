@@ -147,7 +147,14 @@ class NpllmSystem:
         
         # 1. LLM Base processa (inferência apenas)
         # IMPORTANTE: stream=False para garantir retorno de string, não generator
+        self.logger.info(f"Calling base_model.generate() with stream=False")
         response_raw = self.base_model.generate(query, max_length=512, stream=False)
+        self.logger.info(f"base_model.generate() returned type: {type(response_raw)}, is_string: {isinstance(response_raw, str)}")
+        
+        if not isinstance(response_raw, str):
+            self.logger.error(f"ERROR: response_raw is not string! Type: {type(response_raw)}, value: {response_raw}")
+            # Força conversão para string
+            response_raw = str(response_raw) if response_raw else ""
         
         # 2. Seletor escolhe adapter
         project_structure = None
@@ -497,7 +504,14 @@ class NpllmSystem:
         
         # 1. LLM Base processa (inferência apenas)
         # IMPORTANTE: stream=False para garantir retorno de string, não generator
+        self.logger.info(f"Calling base_model.generate() with stream=False")
         response_raw = self.base_model.generate(query, max_length=512, stream=False)
+        self.logger.info(f"base_model.generate() returned type: {type(response_raw)}, is_string: {isinstance(response_raw, str)}")
+        
+        if not isinstance(response_raw, str):
+            self.logger.error(f"ERROR: response_raw is not string! Type: {type(response_raw)}, value: {response_raw}")
+            # Força conversão para string
+            response_raw = str(response_raw) if response_raw else ""
         
         # 2. Seletor escolhe adapter
         project_structure = None

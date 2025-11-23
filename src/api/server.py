@@ -231,12 +231,17 @@ async def process_query(request: QueryRequest, stream: bool = False):
                 
                 # Gera resposta completa (sem streaming real)
                 # IMPORTANTE: stream=False para garantir retorno de string, não generator
+                logger.info(f"Calling base_model.generate() with stream=False, query_length={len(query_text)}")
                 response = system.base_model.generate(query_text, max_length=512, stream=False)
+                logger.info(f"base_model.generate() returned type: {type(response)}, value_preview: {str(response)[:100] if response else 'None'}")
                 
                 # Garantir que response é string, não generator
                 if not isinstance(response, str):
+                    logger.warning(f"Response is not string! Type: {type(response)}, converting...")
                     # Se for generator ou outro tipo, converter para string
                     response = str(response) if response else ""
+                else:
+                    logger.info(f"Response is string, length: {len(response)}")
                 
                 # Status: Processando resposta
                 yield f"data: {json.dumps({'type': 'status', 'stage': 'processing', 'message': 'Processando resposta...'})}\n\n"
@@ -268,18 +273,30 @@ async def process_query(request: QueryRequest, stream: bool = False):
             )
         else:
             # Modo normal (não-streaming)
-            result = system.process_query(
-                query=request.query,
-                project_path=request.project_path,
-                file_path=request.file_path,
-                course_context=request.course_context
-            )
-            
-            return QueryResponse(
-                response=result["response"],
-                adapter_used=result["adapter_used"],
-                course_context_used=result.get("course_context_used", False)
-            )
+            logger.info(f"Processing query (non-streaming): {request.query[:50]}...")
+            try:
+                result = system.process_query(
+                    query=request.query,
+                    project_path=request.project_path,
+                    file_path=request.file_path,
+                    course_context=request.course_context
+                )
+                logger.info(f"process_query() returned result with keys: {list(result.keys())}")
+                logger.info(f"result['response'] type: {type(result.get('response'))}, length: {len(result.get('response', '')) if isinstance(result.get('response'), str) else 'N/A'}")
+                
+                response_text = result["response"]
+                if not isinstance(response_text, str):
+                    logger.error(f"Response is not string! Type: {type(response_text)}, value: {response_text}")
+                    response_text = str(response_text) if response_text else ""
+                
+                return QueryResponse(
+                    response=response_text,
+                    adapter_used=result["adapter_used"],
+                    course_context_used=result.get("course_context_used", False)
+                )
+            except Exception as e:
+                logger.error(f"Error in process_query: {e}", exc_info=True)
+                raise
     
     except Exception as e:
         logger.error(f"Error processing query: {e}")

@@ -142,10 +142,15 @@ class CodeLlamaBaseModel(LLMModelInterface):
         Returns:
             Texto gerado (string) ou generator (se stream=True)
         """
+        self.logger.debug(f"generate() called with stream={stream}, prompt_length={len(prompt)}")
         if stream:
+            self.logger.debug("Calling _generate_stream()")
             return self._generate_stream(prompt, max_length, temperature, top_p, **kwargs)
         else:
-            return self._generate_normal(prompt, max_length, temperature, top_p, **kwargs)
+            self.logger.debug("Calling _generate_normal()")
+            result = self._generate_normal(prompt, max_length, temperature, top_p, **kwargs)
+            self.logger.debug(f"_generate_normal() returned type: {type(result)}, length: {len(result) if isinstance(result, str) else 'N/A'}")
+            return result
     
     def _generate_normal(
         self,
@@ -161,6 +166,7 @@ class CodeLlamaBaseModel(LLMModelInterface):
         Returns:
             String com texto gerado
         """
+        self.logger.debug(f"_generate_normal() called with max_length={max_length}")
         # Carrega modelo se necessário
         self._load_model()
         
@@ -194,6 +200,7 @@ class CodeLlamaBaseModel(LLMModelInterface):
         # Adiciona ao cache
         self._update_cache(cache_key, response)
         
+        self.logger.debug(f"_generate_normal() returning string of length {len(response)}")
         return response
     
     def _generate_stream(
