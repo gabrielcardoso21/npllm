@@ -38,12 +38,12 @@ class NpllmSystem:
     """
     
     def __init__(self, config_path: str = None):
-    """
-    Inicializa sistema completo
-    
-    Args:
-        config_path: Caminho para arquivo de configuração
-    """
+        """
+        Inicializa sistema completo
+        
+        Args:
+            config_path: Caminho para arquivo de configuração
+        """
         self.logger = get_logger("npllm")
         self.config = get_config(config_path)
         
