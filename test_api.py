@@ -110,8 +110,8 @@ def test_query_streaming(query: str = "Crie uma função Python para calcular fi
         try:
             for line in response.iter_lines(decode_unicode=True):
                 if line:
-                line_str = line if isinstance(line, str) else line.decode('utf-8', errors='ignore')
-                if line_str.startswith('data: '):
+                    line_str = line if isinstance(line, str) else line.decode('utf-8', errors='ignore')
+                    if line_str.startswith('data: '):
                     try:
                         event_data = json.loads(line_str[6:])  # Remove "data: "
                         
