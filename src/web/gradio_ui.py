@@ -278,20 +278,29 @@ def create_interface():
             if not query.strip():
                 return "", "⚠️ Por favor, digite uma pergunta", ""
             
-            response, error = query_api(
-                query,
-                project_path if project_path.strip() else None,
-                file_path if file_path.strip() else None,
-                stream=False,
-                direct=True  # Usa rota direta
-            )
-            
-            if error:
-                return "", error, ""
-            elif not response or response.strip() == "":
-                return "", "⚠️ Resposta vazia do modelo direto", ""
-            else:
-                return response, f"⚡ Resposta direta do modelo ({len(response)} caracteres)", response
+            try:
+                response, error = query_api(
+                    query,
+                    project_path if project_path.strip() else None,
+                    file_path if file_path.strip() else None,
+                    stream=False,
+                    direct=True  # Usa rota direta
+                )
+                
+                print(f"DEBUG submit_direct - response type: {type(response)}, length: {len(response) if response else 0}")
+                print(f"DEBUG submit_direct - error: {error}")
+                print(f"DEBUG submit_direct - response preview: {str(response)[:100] if response else 'EMPTY'}")
+                
+                if error:
+                    return "", error, ""
+                elif not response or response.strip() == "":
+                    return "", "⚠️ Resposta vazia do modelo direto", ""
+                else:
+                    return response, f"⚡ Resposta direta do modelo ({len(response)} caracteres)", response
+            except Exception as e:
+                error_msg = f"❌ Erro: {str(e)}"
+                print(f"DEBUG submit_direct - Exception: {e}")
+                return "", error_msg, ""
         
         def submit_streaming(query, project_path, file_path):
             if not query.strip():
