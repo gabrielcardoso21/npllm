@@ -175,6 +175,17 @@ async def query_direct(request: QueryRequest):
             stream=False
         )
         
+        logger.info(f"Direct query response type: {type(response)}, length: {len(response) if isinstance(response, str) else 'N/A'}")
+        logger.info(f"Direct query response preview: {str(response)[:200] if response else 'EMPTY'}")
+        
+        # Garantir que response é string
+        if not isinstance(response, str):
+            response = str(response) if response else ""
+        
+        if not response or response.strip() == "":
+            logger.warning("Direct query returned empty response!")
+            response = "⚠️ O modelo não gerou uma resposta. Tente uma pergunta diferente."
+        
         return {
             "response": response,
             "model_used": system.base_model.model_path,
@@ -320,14 +331,23 @@ async def process_query(request: QueryRequest, stream: bool = False):
                 logger.info(f"process_query() returned result with keys: {list(result.keys())}")
                 logger.info(f"result['response'] type: {type(result.get('response'))}, length: {len(result.get('response', '')) if isinstance(result.get('response'), str) else 'N/A'}")
                 
-                response_text = result["response"]
+                response_text = result.get("response", "")
+                
+                # Garantir que response é string
                 if not isinstance(response_text, str):
-                    logger.error(f"Response is not string! Type: {type(response_text)}, value: {response_text}")
+                    logger.warning(f"Response is not string! Type: {type(response_text)}, converting...")
                     response_text = str(response_text) if response_text else ""
+                
+                # Se resposta estiver vazia, adicionar mensagem
+                if not response_text or response_text.strip() == "":
+                    logger.warning("process_query returned empty response!")
+                    response_text = "⚠️ O sistema não gerou uma resposta. Tente uma pergunta diferente."
+                
+                logger.info(f"Final response length: {len(response_text)}")
                 
                 return QueryResponse(
                     response=response_text,
-                    adapter_used=result["adapter_used"],
+                    adapter_used=result.get("adapter_used", "default"),
                     course_context_used=result.get("course_context_used", False)
                 )
             except Exception as e:

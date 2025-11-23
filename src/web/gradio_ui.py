@@ -287,9 +287,11 @@ def create_interface():
             )
             
             if error:
-                return "", error, response
+                return "", error, ""
+            elif not response or response.strip() == "":
+                return "", "⚠️ Resposta vazia do modelo direto", ""
             else:
-                return response, "⚡ Resposta direta do modelo (sem adapters)", response
+                return response, f"⚡ Resposta direta do modelo ({len(response)} caracteres)", response
         
         def submit_streaming(query, project_path, file_path):
             if not query.strip():
