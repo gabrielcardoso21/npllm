@@ -32,8 +32,10 @@ class AdapterManager:
         self.adapters_dir = Path("./adapters")
         self.adapters_dir.mkdir(parents=True, exist_ok=True)
         
-        # Cache de adapters carregados
+        # Cache de adapters carregados (objetos LoRAAdapter)
         self._loaded_adapters: Dict[str, Any] = {}
+        # Cache de adapters carregados no modelo (PeftModel)
+        self._loaded_models: Dict[str, Any] = {}
         self._current_adapter: Optional[str] = None
         
         self.logger.info("Adapter manager initialized")
@@ -87,7 +89,7 @@ class AdapterManager:
             True se carregado com sucesso
         """
         # Se já está carregado, não precisa recarregar
-        if self._current_adapter == adapter_name and adapter_name in self._loaded_adapters:
+        if self._current_adapter == adapter_name and adapter_name in self._loaded_models:
             return True
         
         try:
@@ -108,10 +110,12 @@ class AdapterManager:
             
             if adapter_path.exists():
                 # Carrega adapter usando PEFT
+                # IMPORTANTE: PeftModel.from_pretrained modifica o modelo base
+                # Os pesos do adapter são aplicados durante a geração
                 model = PeftModel.from_pretrained(model, str(adapter_path))
                 base_model_instance._model = model
                 
-                self._loaded_adapters[adapter_name] = model
+                self._loaded_models[adapter_name] = model
                 self._current_adapter = adapter_name
                 
                 self.logger.info(f"Adapter {adapter_name} loaded for generation")
