@@ -148,7 +148,7 @@ class NpllmSystem:
         # 1. LLM Base processa (inferência apenas)
         # IMPORTANTE: stream=False para garantir retorno de string, não generator
         self.logger.info(f"Calling base_model.generate() with stream=False")
-        response_raw = self.base_model.generate(query, max_length=2048, stream=False)
+        response_raw = self.base_model.generate(query, max_length=8192, stream=False)
         self.logger.info(f"base_model.generate() returned type: {type(response_raw)}, is_string: {isinstance(response_raw, str)}")
         
         if not isinstance(response_raw, str):
@@ -505,7 +505,7 @@ class NpllmSystem:
         # 1. LLM Base processa (inferência apenas)
         # IMPORTANTE: stream=False para garantir retorno de string, não generator
         self.logger.info(f"Calling base_model.generate() with stream=False")
-        response_raw = self.base_model.generate(query, max_length=2048, stream=False)
+        response_raw = self.base_model.generate(query, max_length=8192, stream=False)
         self.logger.info(f"base_model.generate() returned type: {type(response_raw)}, is_string: {isinstance(response_raw, str)}")
         
         if not isinstance(response_raw, str):
