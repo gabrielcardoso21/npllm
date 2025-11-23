@@ -1,6 +1,6 @@
-# 🌊 Streaming API
+# 🌊 Status/Progress API (Fake Streaming)
 
-A API npllm suporta streaming de respostas usando Server-Sent Events (SSE).
+A API npllm suporta "fake streaming" - envia status de progresso usando Server-Sent Events (SSE) ao invés de tokens reais.
 
 ## 📡 Endpoint com Streaming
 
@@ -12,24 +12,30 @@ curl -N -X POST "http://161.97.123.192:8000/query?stream=true" \
   -d '{"query": "Crie uma função Python para calcular fibonacci"}'
 ```
 
-### Formato SSE
+### Formato SSE (Status/Progress)
 
-A resposta vem em formato Server-Sent Events:
+A resposta vem em formato Server-Sent Events com status de progresso:
 
 ```
-data: {"type": "start", "adapter": "loading"}
+data: {"type": "status", "stage": "starting", "message": "Iniciando processamento..."}
 
-data: {"type": "adapter", "adapter": "python_adapter"}
+data: {"type": "status", "stage": "context", "message": "Buscando contexto do curso..."}
 
-data: {"type": "token", "token": "def"}
+data: {"type": "status", "stage": "adapter_selection", "message": "Selecionando adapter apropriado..."}
 
-data: {"type": "token", "token": " fibonacci"}
+data: {"type": "status", "stage": "adapter_selected", "message": "Adapter selecionado: python_adapter"}
 
-data: {"type": "token", "token": "(n):"}
+data: {"type": "status", "stage": "adapter_loading", "message": "Carregando adapter python_adapter..."}
 
-...
+data: {"type": "status", "stage": "adapter_loaded", "message": "Adapter python_adapter carregado com sucesso"}
 
-data: {"type": "done", "response": "def fibonacci(n): ...", "adapter_used": "python_adapter"}
+data: {"type": "status", "stage": "generating", "message": "Gerando resposta..."}
+
+data: {"type": "status", "stage": "processing", "message": "Processando resposta..."}
+
+data: {"type": "status", "stage": "finalizing", "message": "Finalizando..."}
+
+data: {"type": "done", "response": "def fibonacci(n): ...", "adapter_used": "python_adapter", "adapter_applied": true, "message": "Resposta gerada com sucesso"}
 ```
 
 ## 📝 Exemplo Python
@@ -50,14 +56,14 @@ for line in response.iter_lines():
         if line_str.startswith('data: '):
             event_data = json.loads(line_str[6:])  # Remove "data: "
             
-            if event_data['type'] == 'start':
-                print("🚀 Iniciando geração...")
-            elif event_data['type'] == 'adapter':
-                print(f"🔧 Adapter: {event_data['adapter']}")
-            elif event_data['type'] == 'token':
-                print(event_data['token'], end='', flush=True)
+            if event_data['type'] == 'status':
+                stage = event_data['stage']
+                message = event_data['message']
+                print(f"📊 [{stage}] {message}")
             elif event_data['type'] == 'done':
-                print(f"\n✅ Completo! Adapter: {event_data['adapter_used']}")
+                print(f"\n✅ {event_data['message']}")
+                print(f"📝 Resposta: {event_data['response']}")
+                print(f"🔧 Adapter: {event_data['adapter_used']} (aplicado: {event_data['adapter_applied']})")
 ```
 
 ## 📝 Exemplo JavaScript
@@ -75,10 +81,13 @@ const eventSource = new EventSource(
 eventSource.onmessage = (event) => {
   const data = JSON.parse(event.data);
   
-  if (data.type === 'token') {
-    document.getElementById('output').innerText += data.token;
+  if (data.type === 'status') {
+    // Atualiza UI com status
+    document.getElementById('status').innerText = data.message;
+    document.getElementById('progress').setAttribute('data-stage', data.stage);
   } else if (data.type === 'done') {
     eventSource.close();
+    document.getElementById('output').innerText = data.response;
     console.log('Completo!', data);
   }
 };
@@ -94,17 +103,23 @@ curl -X POST "http://161.97.123.192:8000/query" \
   -d '{"query": "Crie uma função Python"}'
 ```
 
-## ⚡ Vantagens do Streaming
+## ⚡ Vantagens do Status/Progress
 
-1. **Feedback imediato**: Vê tokens sendo gerados em tempo real
-2. **Melhor UX**: Usuário não fica esperando sem feedback
-3. **Debugging**: Identifica problemas mais rápido
+1. **Feedback claro**: Usuário sabe exatamente o que está acontecendo
+2. **Melhor UX**: Não fica esperando sem saber o status
+3. **Debugging**: Identifica em qual etapa está o problema
 4. **Progresso visível**: Sabe que o sistema está funcionando
+5. **Mais simples**: Não precisa lidar com tokens individuais
+6. **Adapter funciona**: Adapter é aplicado antes da geração completa
 
 ## 🎯 Tipos de Eventos
 
-- `start`: Geração iniciada
-- `adapter`: Adapter selecionado
-- `token`: Token gerado (vários eventos)
+- `status`: Status de progresso (vários eventos)
+  - `stage`: Etapa atual (`starting`, `context`, `adapter_selection`, `adapter_selected`, `adapter_loading`, `adapter_loaded`, `model_loading`, `generating`, `processing`, `finalizing`)
+  - `message`: Mensagem descritiva
 - `done`: Geração completa
+  - `response`: Resposta completa gerada
+  - `adapter_used`: Adapter usado
+  - `adapter_applied`: Se adapter foi aplicado
+  - `message`: Mensagem final
 

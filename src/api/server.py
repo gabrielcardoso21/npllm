@@ -167,16 +167,17 @@ async def process_query(request: QueryRequest, stream: bool = False):
     
     try:
         if stream:
-            # Modo streaming
-            async def generate_stream():
-                # Envia metadados iniciais
-                yield f"data: {json.dumps({'type': 'start', 'adapter': 'loading'})}\n\n"
+            # Modo "fake streaming" - envia status de progresso
+            async def generate_progress():
+                # Status: Iniciando
+                yield f"data: {json.dumps({'type': 'status', 'stage': 'starting', 'message': 'Iniciando processamento...'})}\n\n"
                 
-                # Processa query com streaming
+                # Processa query
                 query_text = request.query
                 
-                # Prepara contexto se necessário
+                # Status: Preparando contexto
                 if request.course_context:
+                    yield f"data: {json.dumps({'type': 'status', 'stage': 'context', 'message': 'Buscando contexto do curso...'})}\n\n"
                     try:
                         from src.learning.content_processor import ContentProcessor
                         processor = ContentProcessor()
@@ -191,46 +192,60 @@ async def process_query(request: QueryRequest, stream: bool = False):
                             for chunk in relevant_chunks:
                                 context += f"- {chunk['title']}: {chunk['content'][:200]}...\n"
                             query_text = f"{context}\n\nUser query: {query_text}"
+                            yield f"data: {json.dumps({'type': 'status', 'stage': 'context', 'message': f'Contexto encontrado: {len(relevant_chunks)} chunks relevantes'})}\n\n"
                     except Exception as e:
                         logger.warning(f"Error retrieving course context: {e}")
+                        yield f"data: {json.dumps({'type': 'status', 'stage': 'context', 'message': 'Contexto não disponível, continuando...'})}\n\n"
                 
-                # Seleciona adapter
+                # Status: Selecionando adapter
+                yield f"data: {json.dumps({'type': 'status', 'stage': 'adapter_selection', 'message': 'Selecionando adapter apropriado...'})}\n\n"
                 adapter_name = system.selector.select(
                     file_path=request.file_path,
                     project_structure={"path": request.project_path} if request.project_path else None
                 )
+                yield f"data: {json.dumps({'type': 'status', 'stage': 'adapter_selected', 'message': f'Adapter selecionado: {adapter_name}'})}\n\n"
                 
-                yield f"data: {json.dumps({'type': 'adapter', 'adapter': adapter_name})}\n\n"
-                
-                # IMPORTANTE: Carrega adapter no modelo ANTES da geração
-                # Assim, os tokens já vêm adaptados durante o streaming
+                # Status: Carregando adapter
                 adapter_loaded = False
-                try:
-                    adapter_loaded = system.adapter_manager.load_adapter_for_generation(
-                        adapter_name, 
-                        system.base_model
-                    )
-                    if adapter_loaded:
-                        yield f"data: {json.dumps({'type': 'adapter_loaded', 'adapter': adapter_name})}\n\n"
-                except Exception as e:
-                    logger.warning(f"Could not load adapter {adapter_name}: {e}")
-                    # Continua sem adapter
+                if adapter_name and adapter_name != "default":
+                    yield f"data: {json.dumps({'type': 'status', 'stage': 'adapter_loading', 'message': f'Carregando adapter {adapter_name}...'})}\n\n"
+                    try:
+                        adapter_loaded = system.adapter_manager.load_adapter_for_generation(
+                            adapter_name, 
+                            system.base_model
+                        )
+                        if adapter_loaded:
+                            yield f"data: {json.dumps({'type': 'status', 'stage': 'adapter_loaded', 'message': f'Adapter {adapter_name} carregado com sucesso'})}\n\n"
+                        else:
+                            yield f"data: {json.dumps({'type': 'status', 'stage': 'adapter_fallback', 'message': f'Adapter não encontrado, usando modelo base'})}\n\n"
+                    except Exception as e:
+                        logger.warning(f"Could not load adapter {adapter_name}: {e}")
+                        yield f"data: {json.dumps({'type': 'status', 'stage': 'adapter_error', 'message': f'Erro ao carregar adapter: {str(e)[:50]}'})}\n\n"
                 
-                # Gera resposta com streaming (do LLM Base, agora com adapter se carregado)
-                # Os tokens já vêm adaptados porque o adapter está carregado no modelo
-                generator = system.base_model.generate(query_text, max_length=512, stream=True)
+                # Status: Carregando modelo (se necessário)
+                if system.base_model._model is None:
+                    yield f"data: {json.dumps({'type': 'status', 'stage': 'model_loading', 'message': 'Carregando modelo base...'})}\n\n"
                 
-                full_response = ""
-                for token in generator:
-                    full_response += token
-                    yield f"data: {json.dumps({'type': 'token', 'token': token})}\n\n"
+                # Status: Gerando resposta
+                yield f"data: {json.dumps({'type': 'status', 'stage': 'generating', 'message': 'Gerando resposta...'})}\n\n"
                 
-                # Finaliza com resposta (gerada com adapter se estava carregado)
+                # Gera resposta completa (sem streaming real)
+                response = system.base_model.generate(query_text, max_length=512, stream=False)
+                
+                # Status: Processando resposta
+                yield f"data: {json.dumps({'type': 'status', 'stage': 'processing', 'message': 'Processando resposta...'})}\n\n"
+                
+                # Armazena adapter para feedback
                 system._last_adapter_name = adapter_name
-                yield f"data: {json.dumps({'type': 'done', 'response': full_response, 'adapter_used': adapter_name, 'adapter_applied': adapter_loaded})}\n\n"
+                
+                # Status: Finalizando
+                yield f"data: {json.dumps({'type': 'status', 'stage': 'finalizing', 'message': 'Finalizando...'})}\n\n"
+                
+                # Resposta completa
+                yield f"data: {json.dumps({'type': 'done', 'response': response, 'adapter_used': adapter_name, 'adapter_applied': adapter_loaded, 'message': 'Resposta gerada com sucesso'})}\n\n"
             
             return StreamingResponse(
-                generate_stream(),
+                generate_progress(),
                 media_type="text/event-stream",
                 headers={
                     "Cache-Control": "no-cache",
