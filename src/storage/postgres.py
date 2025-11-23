@@ -476,6 +476,14 @@ class PostgreSQLStorage:
             if not row:
                 return None
             
+            # Converter datetime para string ISO
+            created_at = row[6]
+            if hasattr(created_at, 'isoformat'):
+                created_at = created_at.isoformat()
+            updated_at = row[7] if row[7] else None
+            if updated_at and hasattr(updated_at, 'isoformat'):
+                updated_at = updated_at.isoformat()
+            
             return {
                 "id": row[0],
                 "name": row[1],
@@ -483,8 +491,8 @@ class PostgreSQLStorage:
                 "source_type": row[3],
                 "source_path": row[4],
                 "status": row[5],
-                "created_at": row[6],
-                "updated_at": row[7]
+                "created_at": created_at,
+                "updated_at": updated_at
             }
         
         except Exception as e:
