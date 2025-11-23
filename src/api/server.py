@@ -169,14 +169,16 @@ async def query_direct(request: QueryRequest):
         # Query direta no modelo base, sem adapters
         logger.info(f"Direct query (model only): {request.query[:50]}...")
         
+        # Modelo direto - sem limite de tokens (resposta completa)
+        import time
+        start_time = time.time()
         response = system.base_model.generate(
             request.query,
-            max_length=8192,
+            max_length=8192,  # Sem limite - resposta completa
             stream=False
         )
-        
-        logger.info(f"Direct query response type: {type(response)}, length: {len(response) if isinstance(response, str) else 'N/A'}")
-        logger.info(f"Direct query response preview: {str(response)[:200] if response else 'EMPTY'}")
+        elapsed = time.time() - start_time
+        logger.info(f"Direct query completed in {elapsed:.2f}s, response type: {type(response)}, length: {len(response) if response else 0}, preview: {str(response)[:100] if response else 'None'}")
         
         # Garantir que response é string
         if not isinstance(response, str):

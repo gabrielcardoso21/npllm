@@ -4,11 +4,13 @@ Simplified initialization based on new architecture
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
 from src.models.base_model import CodeLlamaBaseModel
+from src.models.api_model import APIModel
 from src.adapters.selector import AdapterSelector
 from src.adapters.manager import AdapterManager
 from src.storage.postgres import PostgreSQLStorage
@@ -50,8 +52,17 @@ class NpllmSystem:
         self.logger.info("Initializing npllm system (new architecture)...")
         
         # 1. LLM Base (não treina)
-        self.logger.info("Loading base model...")
-        self.base_model = CodeLlamaBaseModel()
+        # Pode ser local ou via API
+        model_config = self.config.model
+        model_mode = model_config.mode or os.getenv('MODEL_MODE', 'local')
+        
+        if model_mode == "api":
+            provider = model_config.provider or os.getenv('MODEL_PROVIDER', 'groq')
+            self.logger.info(f"Loading API model (provider: {provider})...")
+            self.base_model = APIModel(provider=provider)
+        else:
+            self.logger.info("Loading local model...")
+            self.base_model = CodeLlamaBaseModel()
         
         # 2. Seletor de Adapter (não treina)
         self.logger.info("Initializing adapter selector...")
@@ -478,13 +489,33 @@ class NpllmSystem:
         # Registra atividade (para sistema de sono)
         self.sleep.record_activity()
         
-        # Se course_context fornecido, busca conteúdo relevante
-        context_content = ""
+        # Busca histórico de conversas similares (RAG padrão)
+        history_context = ""
+        try:
+            # Gera embedding da query
+            query_embedding = self.content_processor.generate_embedding(query)
+            
+            # Busca feedbacks similares (histórico de conversas)
+            similar_feedbacks = self.storage.search_similar(
+                query_embedding=query_embedding,
+                top_k=3,
+                min_score=0.7
+            )
+            
+            if similar_feedbacks:
+                history_context = "\n\nRelevant conversation history:\n"
+                for fb in similar_feedbacks:
+                    history_context += f"- Previous: {fb['prompt'][:100]}...\n"
+                    history_context += f"  Response: {fb['response'][:150]}...\n"
+                
+                self.logger.info(f"Found {len(similar_feedbacks)} similar conversations")
+        except Exception as e:
+            self.logger.warning(f"Error retrieving conversation history: {e}")
+        
+        # Se course_context fornecido, busca conteúdo relevante do curso
+        course_context_content = ""
         if course_context:
             try:
-                # Gera embedding da query
-                query_embedding = self.content_processor.generate_embedding(query)
-                
                 # Busca conteúdo relevante do curso
                 relevant_chunks = self.storage.search_course_content(
                     course_context,
@@ -492,15 +523,17 @@ class NpllmSystem:
                     top_k=3
                 )
                 
-                # Adiciona contexto à query
+                # Adiciona contexto do curso à query
                 if relevant_chunks:
-                    context_content = "\n\nRelevant context from course:\n"
+                    course_context_content = "\n\nRelevant context from course:\n"
                     for chunk in relevant_chunks:
-                        context_content += f"- {chunk['title']}: {chunk['content'][:200]}...\n"
-                    
-                    query = f"{context_content}\n\nUser query: {query}"
+                        course_context_content += f"- {chunk['title']}: {chunk['content'][:200]}...\n"
             except Exception as e:
                 self.logger.warning(f"Error retrieving course context: {e}")
+        
+        # Combina contextos
+        if history_context or course_context_content:
+            query = f"{history_context}{course_context_content}\n\nUser query: {query}"
         
         # 1. LLM Base processa (inferência apenas)
         # IMPORTANTE: stream=False para garantir retorno de string, não generator
@@ -537,7 +570,8 @@ class NpllmSystem:
             "response": response,
             "adapter_used": adapter_name,
             "raw_response": response_raw,
-            "course_context_used": course_context is not None
+            "course_context_used": course_context is not None,
+            "history_used": len(history_context) > 0 if 'history_context' in locals() else False
         }
         
         return result
@@ -561,7 +595,7 @@ class NpllmSystem:
         self.logger.info("Closing npllm system...")
         if hasattr(self, 'storage') and self.storage:
             self.storage.close()
-        if hasattr(self, 'base_model') and self.base_model:
+        if hasattr(self, 'base_model') and self.base_model and hasattr(self.base_model, 'unload_model'):
             self.base_model.unload_model()
         self.logger.info("System closed")
 

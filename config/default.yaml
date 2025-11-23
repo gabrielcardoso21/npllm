@@ -1,12 +1,13 @@
 # npllm Default Configuration
 
 # Model Configuration
-# Para testes locais rápidos, usar modelo menor
-# Opções: "TinyLlama/TinyLlama-1.1B-Chat-v1.0" (muito rápido, ~600MB)
-#         "microsoft/phi-2" (rápido, ~1.6GB)
-#         "bigcode/starcoder2-3b" (produção, ~6GB)
+# Modo: "local" (modelo local) ou "api" (Groq/Gemini)
+# Para desenvolvimento rápido, usar "api" com Groq (gratuito e rápido)
 model:
-  base_model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # Modelo pequeno para testes locais
+  mode: "api"  # "local" ou "api"
+  provider: "groq"  # "groq" ou "gemini" (quando mode=api)
+  # API Key: Configure via variável de ambiente GROQ_API_KEY
+  base_model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # Usado apenas quando mode=local
   quantization: "4bit"
   quantization_type: "ggml"
   device: "cpu"  # Will use CPU for inference

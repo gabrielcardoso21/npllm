@@ -51,22 +51,28 @@ class StructuredLogger:
             )
     
     def _format_log(self, record: Dict[str, Any]) -> str:
-        """Format log record as JSON"""
-        log_data = {
-            "timestamp": record.get("time", datetime.utcnow()).isoformat() if hasattr(record.get("time", datetime.utcnow()), "isoformat") else str(record.get("time", datetime.utcnow())),
-            "level": record["level"].name,
-            "name": self.name,
-            "message": record["message"],
-            "module": record.get("name", ""),
-            "function": record.get("function", ""),
-            "line": record.get("line", 0)
-        }
+        """Format log record as simple text (evita problemas com format_map)"""
+        try:
+            # Tenta acessar time do record
+            time_obj = record.get("time")
+            if time_obj:
+                if hasattr(time_obj, "isoformat"):
+                    timestamp = time_obj.isoformat()
+                else:
+                    timestamp = str(time_obj)
+            else:
+                timestamp = datetime.utcnow().isoformat()
+        except:
+            timestamp = datetime.utcnow().isoformat()
         
-        # Add extra fields if present
-        if "extra" in record:
-            log_data.update(record["extra"])
+        level = record.get("level", {}).name if hasattr(record.get("level", {}), "name") else "INFO"
+        message = record.get("message", "")
+        module = record.get("name", "")
+        function = record.get("function", "")
+        line = record.get("line", 0)
         
-        return json.dumps(log_data)
+        # Formato simples e legível (evita JSON para não ter problemas com format_map)
+        return f"[{timestamp}] {level} | {self.name} | {module}:{function}:{line} | {message}"
     
     def debug(self, message: str, **kwargs):
         """Log debug message"""

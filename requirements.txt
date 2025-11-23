@@ -1,6 +1,7 @@
 # Core ML/AI Frameworks
 torch>=2.0.0
 transformers>=4.35.0
+requests>=2.31.0
 peft>=0.7.0
 sentence-transformers>=2.2.2
 

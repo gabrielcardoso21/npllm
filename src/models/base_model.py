@@ -104,11 +104,16 @@ class CodeLlamaBaseModel(LLMModelInterface):
             else:
                 # Modelos pequenos: sem quantização para mais velocidade
                 self.logger.info("Loading small model without quantization for faster inference")
+                # Usa bfloat16 se disponível (mais rápido que float32), senão float16
+                try:
+                    dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float16
+                except:
+                    dtype = torch.float16
                 self._model = AutoModelForCausalLM.from_pretrained(
                     self.model_path,
                     device_map="auto",
                     cache_dir=str(self.cache_dir),
-                    torch_dtype=torch.float32,  # float32 para modelos pequenos
+                    torch_dtype=dtype,  # bfloat16/float16 para mais velocidade
                     low_cpu_mem_usage=True,
                     token=hf_token,
                     trust_remote_code=True
@@ -182,12 +187,30 @@ class CodeLlamaBaseModel(LLMModelInterface):
         Returns:
             String com texto gerado
         """
+        import time
+        start_time = time.time()
         self.logger.debug(f"_generate_normal() called with max_length={max_length}")
+        
         # Carrega modelo se necessário
+        load_start = time.time()
         self._load_model()
+        load_time = time.time() - load_start
+        if load_time > 0.1:
+            self.logger.info(f"Model load time: {load_time:.2f}s")
+        
+        # Formata prompt para TinyLlama se necessário
+        if "TinyLlama" in self.model_path:
+            # TinyLlama usa formato de chat simples
+            formatted_prompt = f"<|user|>\n{prompt}<|assistant|>\n"
+        else:
+            formatted_prompt = prompt
         
         # Tokeniza prompt
-        inputs = self._tokenizer(prompt, return_tensors="pt").to(self.device)
+        tokenize_start = time.time()
+        inputs = self._tokenizer(formatted_prompt, return_tensors="pt").to(self.device)
+        tokenize_time = time.time() - tokenize_start
+        if tokenize_time > 0.1:
+            self.logger.debug(f"Tokenization time: {tokenize_time:.2f}s")
         
         # Verifica cache primeiro
         cache_key = f"{prompt}_{max_length}_{temperature}_{top_p}"
@@ -195,31 +218,51 @@ class CodeLlamaBaseModel(LLMModelInterface):
             self.logger.debug("Cache hit for prompt")
             return self.response_cache[cache_key]
         
+        # Usa max_length fornecido (sem limitação artificial)
+        # O usuário controla o tamanho através do parâmetro max_length
+        effective_max_length = max_length
+        
         # Gera resposta
+        gen_start = time.time()
+        input_length = inputs.input_ids.shape[1]
+        max_new_tokens = max(1, effective_max_length - input_length)  # Garante pelo menos 1 token
+        
         with torch.no_grad():
             outputs = self._model.generate(
                 **inputs,
-                max_length=max_length,
+                max_new_tokens=max_new_tokens,  # Usa max_new_tokens para ser mais preciso
                 temperature=temperature,
                 top_p=top_p,
-                do_sample=True,
+                do_sample=temperature > 0,  # Se temperature=0, não faz sampling
                 pad_token_id=self._tokenizer.pad_token_id,
                 **kwargs
             )
+        gen_time = time.time() - gen_start
+        self.logger.info(f"Generation time: {gen_time:.2f}s, tokens: {outputs.shape[1] - inputs.input_ids.shape[1]}")
         
         # Decodifica resposta
+        decode_start = time.time()
         generated_text = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
+        decode_time = time.time() - decode_start
         
         # Remove prompt da resposta
         # IMPORTANTE: Verificar se o prompt está no início antes de remover
-        if generated_text.startswith(prompt):
+        if generated_text.startswith(formatted_prompt):
+            response = generated_text[len(formatted_prompt):].strip()
+        elif generated_text.startswith(prompt):
             response = generated_text[len(prompt):].strip()
         else:
             # Se o prompt não estiver no início, pode ser que o modelo tenha reformatado
-            # Nesse caso, retorna tudo (o modelo pode ter adicionado contexto)
-            response = generated_text.strip()
+            # Nesse caso, tenta remover apenas a parte do prompt original
+            # Para TinyLlama, remove o formato de chat
+            if "<|assistant|>" in generated_text:
+                response = generated_text.split("<|assistant|>", 1)[-1].strip()
+            else:
+                response = generated_text.strip()
         
         # Log para debug
+        total_time = time.time() - start_time
+        self.logger.info(f"Total generation time: {total_time:.2f}s (load: {load_time:.2f}s, gen: {gen_time:.2f}s, decode: {decode_time:.2f}s)")
         self.logger.debug(f"Generated text length: {len(generated_text)}, Response length: {len(response)}")
         
         # Adiciona ao cache
@@ -242,41 +285,86 @@ class CodeLlamaBaseModel(LLMModelInterface):
         Yields:
             Tokens conforme são gerados
         """
+        import time
+        start_time = time.time()
+        
         # Carrega modelo se necessário
         self._load_model()
         
+        # Formata prompt para TinyLlama se necessário (igual ao _generate_normal)
+        if "TinyLlama" in self.model_path:
+            formatted_prompt = f"<|user|>\n{prompt}<|assistant|>\n"
+        else:
+            formatted_prompt = prompt
+        
         # Tokeniza prompt
-        inputs = self._tokenizer(prompt, return_tensors="pt").to(self.device)
+        inputs = self._tokenizer(formatted_prompt, return_tensors="pt").to(self.device)
+        
+        # Usa max_length fornecido (sem limitação artificial)
+        input_length = inputs.input_ids.shape[1]
+        max_new_tokens = max(1, max_length - input_length)
         
         # Modo streaming: retorna generator
         from transformers import TextIteratorStreamer
         from threading import Thread
+        import queue
         
         streamer = TextIteratorStreamer(
             self._tokenizer,
             skip_prompt=True,
-            skip_special_tokens=True
+            skip_special_tokens=True,
+            timeout=60.0  # Timeout para evitar travamento
         )
         
         # Inicia geração em thread separada
         generation_kwargs = {
             **inputs,
-            "max_length": max_length,
+            "max_new_tokens": max_new_tokens,  # Usa max_new_tokens como no _generate_normal
             "temperature": temperature,
             "top_p": top_p,
-            "do_sample": True,
+            "do_sample": temperature > 0,
             "pad_token_id": self._tokenizer.pad_token_id,
             "streamer": streamer,
             **kwargs
         }
         
-        thread = Thread(target=self._model.generate, kwargs=generation_kwargs)
+        thread = Thread(target=self._model.generate, kwargs=generation_kwargs, daemon=True)
         thread.start()
         
         # Yield tokens conforme são gerados
-        for token in streamer:
-            if token:
-                yield token
+        try:
+            for token in streamer:
+                if token:
+                    yield token
+            # Aguarda thread terminar para evitar erro de cleanup
+            thread.join(timeout=1.0)
+        except Exception as e:
+            self.logger.error(f"Error in streaming: {e}")
+            # Aguarda thread terminar antes do fallback
+            thread.join(timeout=1.0)
+            # Fallback: gera sem streaming
+            self.logger.warning("Falling back to non-streaming generation")
+            with torch.no_grad():
+                outputs = self._model.generate(
+                    **inputs,
+                    max_new_tokens=max_new_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    do_sample=temperature > 0,
+                    pad_token_id=self._tokenizer.pad_token_id,
+                    **kwargs
+                )
+            generated_text = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
+            if generated_text.startswith(formatted_prompt):
+                response = generated_text[len(formatted_prompt):].strip()
+            else:
+                response = generated_text.strip()
+            # Yield resposta completa como fallback
+            yield response
+        finally:
+            # Garante que a thread termine corretamente
+            if thread.is_alive():
+                thread.join(timeout=0.5)
     
     def encode(self, text: str) -> torch.Tensor:
         """

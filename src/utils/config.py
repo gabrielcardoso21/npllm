@@ -35,6 +35,8 @@ class DatabaseConfig(BaseSettings):
 
 class ModelConfig(BaseSettings):
     """Model configuration"""
+    mode: Optional[str] = Field(default=None, env="MODEL_MODE")  # "local" ou "api"
+    provider: Optional[str] = Field(default=None, env="MODEL_PROVIDER")  # "groq" ou "gemini" (quando mode=api)
     base_model: str = Field(default="TinyLlama/TinyLlama-1.1B-Chat-v1.0", env="MODEL_BASE_MODEL")
     quantization: str = "4bit"
     quantization_type: str = "ggml"

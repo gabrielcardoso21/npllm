@@ -1,191 +1,187 @@
-# NeuroPlastic Large Language Model (npllm)
+# npllm - Neuroplastic Large Language Model
 
-Sistema de assistente de código geral que aprende padrões arquiteturais e aplica conhecimento entre projetos.
+A continuously learning AI code assistant with persistent memory and adaptive learning.
 
-## 🎯 Objetivo
+## 🎯 Overview
 
-Criar um assistente de código que:
-- **Aprende padrões arquiteturais** de qualquer projeto
-- **Aprende em um projeto e aplica em outro** (transfer learning)
-- **Foca em arquitetura e engenharia**, não código de baixo nível
-- **Aprende continuamente** e melhora com o tempo
-- **Processa feedback emocional** para guiar aprendizado
+**npllm** is an AI code assistant that learns continuously from your interactions, maintaining persistent memory across sessions and consolidating knowledge during periods of inactivity ("sleep"). Unlike static assistants, npllm:
 
-**Filosofia**: O futuro é de quem sabe arquitetar e gerenciar IA, não de quem escreve código de baixo/médio nível.
+- ✅ **Learns continuously** from your feedback
+- ✅ **Maintains persistent memory** (PostgreSQL + pgvector)
+- ✅ **Consolidates knowledge** during "sleep" periods
+- ✅ **Uses RAG** for conversation history and learned courses
+- ✅ **Fine-tunes adapters** incrementally without forgetting
 
-## 🏗️ Arquitetura Simplificada
+## 🚀 Quick Start
 
-O sistema foi simplificado significativamente, mantendo apenas 6 componentes essenciais:
+### Prerequisites
 
-1. **LLM Base (CodeLlama 3B)** - Não treina (plug-and-play)
-2. **Seletor de Adapter** - Seleção direta por contexto
-3. **LoRA Adapters** - Treina apenas durante sono
-4. **PostgreSQL + pgvector** - Armazenamento
-5. **Análise Emocional (RoBERTa)** - Captura emoção
-6. **Sistema de Sono** - Consolidação durante inatividade
+- Python 3.11+
+- PostgreSQL 14+ with pgvector extension
+- Docker & Docker Compose (optional, for PostgreSQL)
 
-## 📋 Requisitos
+### Installation
 
-- Python 3.8+
-- PostgreSQL 14+ com extensão pgvector (ou Docker)
-- 4 vCPU + 8GB RAM (mínimo)
-- Linux (testado em Ubuntu 22.04)
-
-## 🚀 Instalação Rápida
-
-### 1. Clone o repositório
-
+1. **Clone the repository**:
 ```bash
-git clone https://github.com/gabrielcardoso21/npllm.git
+git clone https://github.com/gabrielkmee/npllm.git
 cd npllm
 ```
 
-### 2. Configure ambiente
-
+2. **Create virtual environment**:
 ```bash
-# Crie ambiente virtual
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+```
 
-# Instale dependências
+3. **Install dependencies**:
+```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure PostgreSQL (Docker)
-
+4. **Setup PostgreSQL** (using Docker):
 ```bash
-# Copie configuração
-cp .env.docker .env
-
-# Inicie PostgreSQL
-./INICIAR_DOCKER.sh
+docker compose up -d postgres
 ```
 
-### 4. Execute teste
-
+5. **Configure environment**:
 ```bash
-./EXECUTAR_TESTE_REAL.sh
+cp .env.example .env
+# Edit .env with your database credentials
 ```
 
-## 🚀 Deploy no Contabo
-
-Para fazer deploy nos servidores Contabo:
-
+6. **Initialize the system**:
 ```bash
-# Deploy automatizado
-./deploy/deploy.sh [IP_SERVIDOR] [USUARIO]
-
-# Exemplo
-./deploy/deploy.sh 161.97.123.192 root
+python3 -m src.main
 ```
 
-Veja **[Documentação de Deploy](deploy/DEPLOY_CONTABO.md)** para instruções completas.
+## 📚 Documentation
 
-## 📚 Documentação
+- **[Architecture](docs/mvp-general-assistant/ARQUITETURA-FINAL.md)** - Complete system architecture
+- **[Implementation Plan](docs/mvp-general-assistant/IMPLEMENTACAO-MVP.md)** - MVP implementation details
+- **[API Documentation](docs/API.md)** - REST API endpoints
+- **[Cursor Integration](docs/CURSOR_INTEGRATION.md)** - How to integrate with Cursor IDE
+- **[Web Interface](docs/WEB_INTERFACE.md)** - Gradio web interface guide
 
-### Essencial
-- **[Arquitetura Final](docs/mvp-general-assistant/ARQUITETURA-FINAL.md)** - Arquitetura completa com diagramas
-- **[Plano de Implementação](docs/mvp-general-assistant/IMPLEMENTACAO-MVP.md)** - Plano detalhado de implementação
-- **[Deploy no Contabo](deploy/DEPLOY_CONTABO.md)** - Guia completo de deploy
+## 🔧 Key Features
 
-### Setup
-- **[Docker Quick Start](DOCKER_QUICKSTART.md)** - Setup rápido com Docker
-- **[Setup Docker](SETUP_DOCKER.md)** - Setup detalhado
-- **[Setup Teste Real](SETUP_TESTE_REAL.md)** - Setup para testes
-- **[Recursos](RECURSOS_RESUMO.md)** - Análise de recursos necessários
+### 1. Continuous Learning
+- Learns from user feedback (emotional + implicit)
+- Stores positive examples in PostgreSQL
+- Consolidates knowledge during "sleep" periods
 
-## 🧪 Testes
+### 2. Persistent Memory
+- PostgreSQL + pgvector for semantic search
+- Conversation history retrieval
+- Learned concepts from courses
 
-```bash
-# Todos os testes
-pytest
+### 3. RAG (Retrieval-Augmented Generation)
+- **Default RAG**: Conversation history
+- **Course RAG**: Knowledge from trained courses
+- **Consolidated RAG**: Knowledge learned during sleep
 
-# Testes de integração
-pytest tests/integration/
+### 4. Adaptive Architecture
+- Base LLM (plug-and-play, not trained)
+- LoRA Adapters (trained during sleep)
+- Adapter Selector (chooses best adapter for context)
 
-# Com cobertura
-pytest --cov=src --cov-report=html
-```
+## 📖 Usage Examples
 
-**Status**: 72 testes passando (96% de sucesso)
-
-## 📁 Estrutura do Projeto
-
-```
-npllm/
-├── src/                    # Código fonte
-│   ├── models/            # LLM Base
-│   ├── adapters/          # LoRA Adapters + Seletor
-│   ├── storage/           # PostgreSQL
-│   ├── feedback/          # Análise Emocional + Implícito
-│   ├── learning/          # Sono + Replay + Fine-tuning
-│   ├── analysis/          # Análise Arquitetural
-│   ├── transfer/          # Transfer Learning
-│   ├── generation/        # Geração Arquitetural
-│   └── utils/             # Utilitários
-├── tests/                  # Testes
-├── docs/                   # Documentação
-│   └── mvp-general-assistant/  # Arquitetura final
-├── docker-compose.yml      # PostgreSQL
-└── requirements.txt        # Dependências
-```
-
-## 🔧 Uso
-
-### Linha de Comando
-
-```bash
-# Processar query
-python -m src.main --query "Create a hello function" --project-path /path/to/project
-
-# Analisar projeto
-python -m src.main --analyze /path/to/project
-
-# Acionar sono manualmente
-python -m src.main --sleep
-```
-
-### Python
-
+### Basic Query
 ```python
-from src.main import NpllmSystem
+from src.main import initialize_system
 
-# Inicializa sistema
-system = NpllmSystem()
-
-# Processa query
-result = system.process_query(
-    query="Create a hello function in Python",
-    file_path="test.py"
-)
-
-# Captura feedback
-system.capture_feedback(
-    query="Create a hello function in Python",
-    response=result["response"],
-    user_reaction="Perfect!",
-    user_action=UserAction.ACCEPT
-)
-
-# Fecha sistema
-system.close()
+system = initialize_system()
+result = system.process_query("How to create an Odoo 18 model?")
+print(result['response'])
 ```
 
-## 📊 Status
+### With Course Context
+```python
+# Create and train a course
+course = system.create_course(
+    name="Odoo 18 Development",
+    description="Odoo 18 module development guide",
+    source_type="url",
+    source_path="https://www.odoo.com/documentation/18.0/..."
+)
+system.start_course_learning(course['id'])
 
-- ✅ Arquitetura definida
-- ✅ Implementação completa
-- ✅ 72 testes passando
-- ✅ Docker configurado
-- ⏳ Testes em ambiente real
+# Query with course context
+result = system.process_query(
+    "How to create a Many2one field?",
+    course_context=course['id']
+)
+```
 
-## 🤝 Contribuindo
+### API Server
+```bash
+# Start API server
+./INICIAR_API.sh
 
-Contribuições são bem-vindas! Por favor:
-1. Leia a [Arquitetura Final](docs/mvp-general-assistant/ARQUITETURA-FINAL.md)
-2. Siga o [Plano de Implementação](docs/mvp-general-assistant/IMPLEMENTACAO-MVP.md)
-3. Execute os testes antes de fazer PR
+# Or use Python
+python3 -m src.api
+```
 
-## 📄 Licença
+### Web Interface
+```bash
+# Start Gradio web interface
+./INICIAR_WEB.sh
 
-MIT
+# Or use Python
+python3 -m src.web
+```
+
+## 🔌 Integration with Cursor IDE
+
+npllm can be integrated with Cursor IDE using an OpenAI-compatible adapter:
+
+1. **Start the Cursor adapter**:
+```bash
+./INICIAR_CURSOR_ADAPTER.sh
+```
+
+2. **Configure Cursor**:
+   - Base URL: `http://localhost:8001`
+   - Model: `npllm`
+
+See [Cursor Integration Guide](docs/CURSOR_INTEGRATION.md) for details.
+
+## 🏗️ Architecture
+
+The system consists of 6 essential components:
+
+1. **Base LLM** - Plug-and-play LLM (not trained)
+2. **Adapter Selector** - Chooses best LoRA adapter for context
+3. **LoRA Adapters** - Trained during "sleep" periods
+4. **PostgreSQL + pgvector** - Persistent memory with semantic search
+5. **Emotional Analyzer** - Detects user sentiment from feedback
+6. **Sleep System** - Consolidates knowledge during inactivity
+
+## 📊 Project Status
+
+- ✅ Core architecture implemented
+- ✅ PostgreSQL storage with pgvector
+- ✅ Course learning system
+- ✅ RAG with conversation history
+- ✅ Sleep consolidation system
+- ✅ API server (FastAPI)
+- ✅ Web interface (Gradio)
+- ✅ Cursor adapter (OpenAI-compatible)
+- 📋 Fine-tuning implementation (planned)
+
+## 🤝 Contributing
+
+Contributions are welcome! Please read our contributing guidelines before submitting PRs.
+
+## 📝 License
+
+[Add your license here]
+
+## 🙏 Acknowledgments
+
+Built with inspiration from:
+- Neuroplasticity concepts in AI
+- RAG (Retrieval-Augmented Generation)
+- LoRA (Low-Rank Adaptation)
+- Replay mechanisms for continual learning

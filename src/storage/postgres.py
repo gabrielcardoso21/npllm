@@ -653,7 +653,14 @@ class PostgreSQLStorage:
             content = []
             for row in cursor.fetchall():
                 import json
-                metadata = json.loads(row[4]) if row[4] else None
+                # Metadata pode já ser dict (se veio de processamento) ou string JSON
+                if row[4]:
+                    if isinstance(row[4], dict):
+                        metadata = row[4]
+                    else:
+                        metadata = json.loads(row[4])
+                else:
+                    metadata = None
                 content.append({
                     "id": row[0],
                     "title": row[1],
@@ -733,7 +740,14 @@ class PostgreSQLStorage:
             results = []
             for row in cursor.fetchall():
                 import json
-                metadata = json.loads(row[4]) if row[4] else None
+                # Metadata pode já ser dict (se veio de processamento) ou string JSON
+                if row[4]:
+                    if isinstance(row[4], (dict, list)):
+                        metadata = row[4]
+                    else:
+                        metadata = json.loads(row[4])
+                else:
+                    metadata = None
                 results.append({
                     "id": row[0],
                     "title": row[1],
@@ -828,8 +842,23 @@ class PostgreSQLStorage:
             concepts = []
             for row in cursor.fetchall():
                 import json
-                examples = json.loads(row[3]) if row[3] else None
-                patterns = json.loads(row[4]) if row[4] else None
+                # Examples e patterns podem já ser list/dict (psycopg2 retorna JSON como Python types) ou string JSON
+                if row[3]:
+                    if isinstance(row[3], (dict, list)):
+                        examples = row[3]
+                    else:
+                        examples = json.loads(row[3])
+                else:
+                    examples = None
+                
+                if row[4]:
+                    if isinstance(row[4], (dict, list)):
+                        patterns = row[4]
+                    else:
+                        patterns = json.loads(row[4])
+                else:
+                    patterns = None
+                
                 concepts.append({
                     "id": row[0],
                     "concept_name": row[1],

@@ -1,212 +1,254 @@
-# 🌐 API npllm
+# npllm API Documentation
 
-API REST para comunicação com o sistema npllm.
+REST API for interacting with npllm system.
 
-## 🚀 Iniciar API
+## Base URL
 
-### Local
+- Local development: `http://localhost:8000`
+- Production: Configure according to your deployment
 
-```bash
-# Ativar ambiente virtual
-source .venv/bin/activate
+## Authentication
 
-# Iniciar API
-python -m src.api.server
+Currently no authentication required. For production, add API key authentication.
 
-# Ou usar script
-./INICIAR_API.sh
-```
+## Endpoints
 
-### Servidor (Contabo)
+### Health Check
 
-```bash
-ssh root@161.97.123.192
-cd /opt/npllm
-source .venv/bin/activate
-python -m src.api.server --host 0.0.0.0 --port 8000
-```
+**GET** `/health`
 
-## 📚 Documentação Interativa
+Check system health status.
 
-Após iniciar a API, acesse:
-
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-
-## 🔌 Endpoints Principais
-
-### 1. Health Check
-
-```bash
-GET /health
-```
-
-Retorna status do sistema.
-
-### 2. Processar Query
-
-```bash
-POST /query
-Content-Type: application/json
-
+**Response**:
+```json
 {
-  "query": "Crie uma função Python para calcular fibonacci",
+  "status": "healthy",
+  "version": "1.0.0"
+}
+```
+
+### Process Query
+
+**POST** `/query`
+
+Process a user query with full pipeline (RAG, adapters, etc.).
+
+**Request Body**:
+```json
+{
+  "query": "How to create an Odoo 18 model?",
   "project_path": "/path/to/project",
-  "file_path": "src/utils.py",
+  "file_path": "/path/to/file.py",
   "course_context": 1
 }
 ```
 
-**Resposta:**
+**Parameters**:
+- `query` (required): User question
+- `project_path` (optional): Project path for context
+- `file_path` (optional): File path for context
+- `course_context` (optional): Course ID for RAG context
+- `stream` (optional): Enable streaming (default: false)
+
+**Response**:
 ```json
 {
-  "response": "def fibonacci(n): ...",
-  "adapter_used": "python_adapter",
-  "course_context_used": true
+  "response": "Here's how to create an Odoo 18 model...",
+  "adapter_used": "python",
+  "course_context_used": true,
+  "history_used": true
 }
 ```
 
-### 3. Capturar Feedback
+### Direct Query
 
-```bash
-POST /feedback
-Content-Type: application/json
+**POST** `/query/direct`
 
+Direct model inference without adapters or extra processing.
+
+**Request Body**:
+```json
 {
-  "query": "Crie uma função Python...",
-  "response": "def fibonacci(n): ...",
-  "user_reaction": "Perfeito! Exatamente o que eu precisava!",
-  "user_action": "accept",
-  "explicit_feedback": 1.0
+  "query": "Your question here"
 }
 ```
 
-### 4. Criar Curso
-
-```bash
-POST /courses
-Content-Type: application/json
-
+**Response**:
+```json
 {
-  "name": "Odoo 18 Development",
-  "description": "Aprender desenvolvimento de módulos Odoo 18",
+  "response": "Direct model response..."
+}
+```
+
+### Submit Feedback
+
+**POST** `/feedback`
+
+Submit feedback for a query/response pair.
+
+**Request Body**:
+```json
+{
+  "query": "Original query",
+  "response": "Generated response",
+  "explicit_feedback": 0.9
+}
+```
+
+**Response**:
+```json
+{
+  "status": "success",
+  "feedback_id": 123
+}
+```
+
+### Course Management
+
+#### List Courses
+
+**GET** `/courses`
+
+List all courses.
+
+**Response**:
+```json
+[
+  {
+    "id": 1,
+    "name": "Odoo 18 Development",
+    "status": "completed",
+    "concepts_learned": 90
+  }
+]
+```
+
+#### Create Course
+
+**POST** `/courses`
+
+Create a new course.
+
+**Request Body**:
+```json
+{
+  "name": "Python Best Practices",
+  "description": "Learn Python best practices",
   "source_type": "url",
-  "source_path": "https://www.odoo.com/documentation/18.0/developer/"
+  "source_path": "https://docs.python.org/3/tutorial/"
 }
 ```
 
-### 5. Listar Cursos
+#### Start Course Learning
 
-```bash
-GET /courses
+**POST** `/courses/{course_id}/start`
+
+Start learning from a course.
+
+**Response**:
+```json
+{
+  "status": "success",
+  "concepts_learned": 50,
+  "chunks_stored": 323
+}
 ```
 
-### 6. Iniciar Aprendizado
+#### Validate Course
 
-```bash
-POST /courses/{course_id}/start
-```
+**POST** `/courses/{course_id}/validate`
 
-### 7. Validar Curso
+Validate a course (automatic or manual).
 
-```bash
-POST /courses/{course_id}/validate
-Content-Type: application/json
-
+**Request Body**:
+```json
 {
   "automatic": true,
   "num_questions": 10,
-  "validation_threshold": 0.75
+  "threshold": 0.75
 }
 ```
 
-### 8. Obter Conceitos Aprendidos
+## Streaming (Server-Sent Events)
 
-```bash
-GET /courses/{course_id}/concepts
+When `stream=true` in query, responses use Server-Sent Events (SSE):
+
+```
+event: status
+data: {"status": "starting"}
+
+event: status
+data: {"status": "generating"}
+
+event: done
+data: {"response": "Full response text..."}
 ```
 
-### 9. Acionar Sono (Consolidação)
+## Error Responses
 
-```bash
-POST /sleep?force=true
+All errors follow this format:
+
+```json
+{
+  "detail": "Error message here"
+}
 ```
 
-## 📝 Exemplos de Uso
+**Status Codes**:
+- `200`: Success
+- `400`: Bad Request
+- `404`: Not Found
+- `500`: Internal Server Error
 
-### Python (requests)
+## Examples
+
+### Python
 
 ```python
 import requests
 
-BASE_URL = "http://localhost:8000"
+# Process query
+response = requests.post(
+    "http://localhost:8000/query",
+    json={
+        "query": "How to create a Python class?",
+        "course_context": 1
+    }
+)
+print(response.json()["response"])
 
-# Criar curso
-response = requests.post(f"{BASE_URL}/courses", json={
-    "name": "FastAPI",
-    "description": "Aprender FastAPI",
-    "source_type": "url",
-    "source_path": "https://fastapi.tiangolo.com/"
-})
-course = response.json()
-course_id = course["id"]
-
-# Iniciar aprendizado
-requests.post(f"{BASE_URL}/courses/{course_id}/start")
-
-# Processar query
-response = requests.post(f"{BASE_URL}/query", json={
-    "query": "Crie uma API FastAPI com autenticação JWT",
-    "course_context": course_id
-})
-result = response.json()
-print(result["response"])
-
-# Capturar feedback
-requests.post(f"{BASE_URL}/feedback", json={
-    "query": "Crie uma API FastAPI...",
-    "response": result["response"],
-    "user_reaction": "Excelente!",
-    "user_action": "accept"
-})
+# Submit feedback
+requests.post(
+    "http://localhost:8000/feedback",
+    json={
+        "query": "How to create a Python class?",
+        "response": "Here's how...",
+        "explicit_feedback": 0.9
+    }
+)
 ```
 
 ### cURL
 
 ```bash
-# Health check
-curl http://localhost:8000/health
-
-# Criar curso
-curl -X POST http://localhost:8000/courses \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Odoo 18",
-    "source_type": "url",
-    "source_path": "https://www.odoo.com/documentation/18.0/"
-  }'
-
-# Processar query
+# Process query
 curl -X POST http://localhost:8000/query \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "Crie um módulo Odoo básico"
-  }'
+  -d '{"query": "How to create a Python class?"}'
+
+# Health check
+curl http://localhost:8000/health
 ```
 
-## 🔒 Segurança
+## Rate Limiting
 
-Para produção, considere:
+Currently no rate limiting. For production, implement rate limiting based on API key or user.
 
-- Autenticação (JWT, API keys)
-- HTTPS/TLS
-- Rate limiting
-- Validação de inputs
-- Logs de auditoria
+## Cursor Adapter
 
-## 📊 Monitoramento
+For Cursor IDE integration, use the Cursor adapter endpoint:
 
-- Health check: `GET /health`
-- Status: `GET /status`
-- Logs: Verificar logs do sistema
+- **Endpoint**: `http://localhost:8001/v1/chat/completions`
+- **Format**: OpenAI-compatible
+- See [Cursor Integration Guide](CURSOR_INTEGRATION_EN.md) for details
 
