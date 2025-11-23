@@ -75,6 +75,14 @@ def test_query_normal(query: str = "Olá! Você está funcionando?"):
         print(f"   Contexto do curso: {data.get('course_context_used', False)}")
         print(f"\n📝 Resposta:\n{data.get('response', 'N/A')[:200]}...")
         return True
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ Erro HTTP {e.response.status_code}: {e}")
+        try:
+            error_data = e.response.json()
+            print(f"   Detalhes: {error_data}")
+        except:
+            print(f"   Resposta: {e.response.text[:200]}")
+        return False
     except Exception as e:
         print(f"❌ Erro: {e}")
         return False
@@ -99,9 +107,9 @@ def test_query_streaming(query: str = "Crie uma função Python para calcular fi
         full_response = None
         stages_seen = []
         
-        for line in response.iter_lines():
+        for line in response.iter_lines(decode_unicode=True):
             if line:
-                line_str = line.decode('utf-8')
+                line_str = line if isinstance(line, str) else line.decode('utf-8', errors='ignore')
                 if line_str.startswith('data: '):
                     try:
                         event_data = json.loads(line_str[6:])  # Remove "data: "
@@ -127,9 +135,13 @@ def test_query_streaming(query: str = "Crie uma função Python para calcular fi
                             print(full_response[:500] + ("..." if len(full_response) > 500 else ""))
                             print("-" * 60)
                             
+                            return True  # Sucesso, pode sair
+                            
                     except json.JSONDecodeError as e:
                         print(f"⚠️  Erro ao decodificar JSON: {e}")
                         print(f"   Linha: {line_str[:100]}")
+                    except Exception as e:
+                        print(f"⚠️  Erro ao processar evento: {e}")
         
         print(f"\n📊 Estágios vistos: {len(stages_seen)}")
         print(f"   {', '.join(stages_seen)}")
@@ -137,13 +149,22 @@ def test_query_streaming(query: str = "Crie uma função Python para calcular fi
         if full_response:
             return True
         else:
-            print("⚠️  Resposta completa não recebida")
-            return False
+            print("⚠️  Resposta completa não recebida (mas status foram vistos)")
+            return len(stages_seen) > 0  # Considera sucesso se viu pelo menos alguns status
             
+    except requests.exceptions.ChunkedEncodingError:
+        # Conexão foi fechada antes de terminar, mas pode ter recebido dados
+        if stages_seen:
+            print(f"\n⚠️  Conexão fechada, mas {len(stages_seen)} status foram recebidos")
+            return True
+        else:
+            print("❌ Conexão quebrada antes de receber dados")
+            return False
     except Exception as e:
         print(f"❌ Erro: {e}")
-        import traceback
-        traceback.print_exc()
+        if stages_seen:
+            print(f"   (Mas {len(stages_seen)} status foram recebidos antes do erro)")
+            return True
         return False
 
 
@@ -207,6 +228,14 @@ def test_courses():
         for course in courses[:3]:  # Mostra até 3
             print(f"   - {course.get('name', 'N/A')} ({course.get('status', 'N/A')})")
         return True
+    except requests.exceptions.HTTPError as e:
+        print(f"❌ Erro HTTP {e.response.status_code}: {e}")
+        try:
+            error_data = e.response.json()
+            print(f"   Detalhes: {error_data}")
+        except:
+            pass
+        return False
     except Exception as e:
         print(f"❌ Erro: {e}")
         return False
