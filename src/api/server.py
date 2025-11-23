@@ -230,7 +230,13 @@ async def process_query(request: QueryRequest, stream: bool = False):
                 yield f"data: {json.dumps({'type': 'status', 'stage': 'generating', 'message': 'Gerando resposta...'})}\n\n"
                 
                 # Gera resposta completa (sem streaming real)
+                # IMPORTANTE: stream=False para garantir retorno de string, não generator
                 response = system.base_model.generate(query_text, max_length=512, stream=False)
+                
+                # Garantir que response é string, não generator
+                if not isinstance(response, str):
+                    # Se for generator ou outro tipo, converter para string
+                    response = str(response) if response else ""
                 
                 # Status: Processando resposta
                 yield f"data: {json.dumps({'type': 'status', 'stage': 'processing', 'message': 'Processando resposta...'})}\n\n"
