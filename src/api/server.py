@@ -18,9 +18,11 @@ if project_root not in sys.path:
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 import uvicorn
+import json
 
 from src.main import initialize_system, NpllmSystem
 from src.utils.logging import get_logger
@@ -148,33 +150,93 @@ async def health():
     return status
 
 
-@app.post("/query", response_model=QueryResponse)
-async def process_query(request: QueryRequest):
+@app.post("/query")
+async def process_query(request: QueryRequest, stream: bool = False):
     """
     Processa uma query do usuário
     
     Args:
         request: Query request com query, project_path, file_path, course_context
+        stream: Se True, retorna streaming SSE (Server-Sent Events)
     
     Returns:
-        Resposta do sistema
+        Resposta do sistema (JSON ou SSE stream)
     """
     if not system:
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        result = system.process_query(
-            query=request.query,
-            project_path=request.project_path,
-            file_path=request.file_path,
-            course_context=request.course_context
-        )
-        
-        return QueryResponse(
-            response=result["response"],
-            adapter_used=result["adapter_used"],
-            course_context_used=result.get("course_context_used", False)
-        )
+        if stream:
+            # Modo streaming
+            async def generate_stream():
+                # Envia metadados iniciais
+                yield f"data: {json.dumps({'type': 'start', 'adapter': 'loading'})}\n\n"
+                
+                # Processa query com streaming
+                query_text = request.query
+                
+                # Prepara contexto se necessário
+                if request.course_context:
+                    try:
+                        from src.learning.content_processor import ContentProcessor
+                        processor = ContentProcessor()
+                        query_embedding = processor.generate_embedding(query_text)
+                        relevant_chunks = system.storage.search_course_content(
+                            request.course_context,
+                            query_embedding,
+                            top_k=3
+                        )
+                        if relevant_chunks:
+                            context = "\n\nRelevant context:\n"
+                            for chunk in relevant_chunks:
+                                context += f"- {chunk['title']}: {chunk['content'][:200]}...\n"
+                            query_text = f"{context}\n\nUser query: {query_text}"
+                    except Exception as e:
+                        logger.warning(f"Error retrieving course context: {e}")
+                
+                # Seleciona adapter
+                adapter_name = system.selector.select(
+                    file_path=request.file_path,
+                    project_structure={"path": request.project_path} if request.project_path else None
+                )
+                
+                yield f"data: {json.dumps({'type': 'adapter', 'adapter': adapter_name})}\n\n"
+                
+                # Gera resposta com streaming
+                generator = system.base_model.generate(query_text, max_length=512, stream=True)
+                
+                full_response = ""
+                for token in generator:
+                    full_response += token
+                    yield f"data: {json.dumps({'type': 'token', 'token': token})}\n\n"
+                
+                # Finaliza
+                system._last_adapter_name = adapter_name
+                yield f"data: {json.dumps({'type': 'done', 'response': full_response, 'adapter_used': adapter_name})}\n\n"
+            
+            return StreamingResponse(
+                generate_stream(),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
+            )
+        else:
+            # Modo normal (não-streaming)
+            result = system.process_query(
+                query=request.query,
+                project_path=request.project_path,
+                file_path=request.file_path,
+                course_context=request.course_context
+            )
+            
+            return QueryResponse(
+                response=result["response"],
+                adapter_used=result["adapter_used"],
+                course_context_used=result.get("course_context_used", False)
+            )
     
     except Exception as e:
         logger.error(f"Error processing query: {e}")
