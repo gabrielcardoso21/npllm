@@ -42,3 +42,6 @@ markdown>=3.4.0
 # API Server
 fastapi>=0.104.0
 uvicorn[standard]>=0.24.0
+
+# Web Interface
+gradio>=4.44.0
