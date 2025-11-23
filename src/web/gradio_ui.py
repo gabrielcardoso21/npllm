@@ -191,8 +191,9 @@ def create_interface():
                     )
                 
                 with gr.Row():
-                    submit_btn = gr.Button("🚀 Enviar", variant="primary", scale=1)
-                    stream_btn = gr.Button("📡 Enviar com Streaming", variant="secondary", scale=1)
+                    submit_btn = gr.Button("🚀 Enviar (Sistema)", variant="primary", scale=1)
+                    direct_btn = gr.Button("⚡ Modelo Direto", variant="secondary", scale=1)
+                    stream_btn = gr.Button("📡 Streaming", variant="secondary", scale=1)
                     health_btn = gr.Button("💚 Verificar API", scale=1)
                 
                 status_output = gr.Textbox(
@@ -304,6 +305,12 @@ def create_interface():
         # Bind events
         submit_btn.click(
             fn=submit_query,
+            inputs=[query_input, project_path_input, file_path_input],
+            outputs=[response_output, status_output, response_output]
+        )
+        
+        direct_btn.click(
+            fn=submit_direct,
             inputs=[query_input, project_path_input, file_path_input],
             outputs=[response_output, status_output, response_output]
         )
