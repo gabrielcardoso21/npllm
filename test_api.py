@@ -107,7 +107,8 @@ def test_query_streaming(query: str = "Crie uma função Python para calcular fi
         full_response = None
         stages_seen = []
         
-        for line in response.iter_lines(decode_unicode=True):
+        try:
+            for line in response.iter_lines(decode_unicode=True):
             if line:
                 line_str = line if isinstance(line, str) else line.decode('utf-8', errors='ignore')
                 if line_str.startswith('data: '):
@@ -151,7 +152,19 @@ def test_query_streaming(query: str = "Crie uma função Python para calcular fi
         else:
             print("⚠️  Resposta completa não recebida (mas status foram vistos)")
             return len(stages_seen) > 0  # Considera sucesso se viu pelo menos alguns status
+        except requests.exceptions.ChunkedEncodingError:
+            # Conexão foi fechada antes de terminar, mas pode ter recebido dados
+            if stages_seen:
+                print(f"\n⚠️  Conexão fechada, mas {len(stages_seen)} status foram recebidos")
+                return True
+            else:
+                print("❌ Conexão quebrada antes de receber dados")
+                return False
             
+    except requests.exceptions.ConnectionError as e:
+        print(f"❌ Erro de conexão: {e}")
+        print("   Verifique se a API está rodando")
+        return False
     except requests.exceptions.ChunkedEncodingError:
         # Conexão foi fechada antes de terminar, mas pode ter recebido dados
         if stages_seen:
