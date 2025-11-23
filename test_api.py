@@ -113,36 +113,36 @@ def test_query_streaming(query: str = "Crie uma função Python para calcular fi
                     line_str = line if isinstance(line, str) else line.decode('utf-8', errors='ignore')
                     if line_str.startswith('data: '):
                         try:
-                        event_data = json.loads(line_str[6:])  # Remove "data: "
-                        
-                        if event_data.get('type') == 'status':
-                            stage = event_data.get('stage', 'unknown')
-                            message = event_data.get('message', '')
-                            print_status(stage, message)
-                            stages_seen.append(stage)
-                        
-                        elif event_data.get('type') == 'done':
-                            full_response = event_data.get('response', '')
-                            adapter_used = event_data.get('adapter_used', 'N/A')
-                            adapter_applied = event_data.get('adapter_applied', False)
+                            event_data = json.loads(line_str[6:])  # Remove "data: "
                             
-                            print("\n" + "=" * 60)
-                            print("✅ Geração completa!")
-                            print("=" * 60)
-                            print(f"🔧 Adapter usado: {adapter_used}")
-                            print(f"🔧 Adapter aplicado: {adapter_applied}")
-                            print(f"\n📝 Resposta completa ({len(full_response)} chars):")
-                            print("-" * 60)
-                            print(full_response[:500] + ("..." if len(full_response) > 500 else ""))
-                            print("-" * 60)
+                            if event_data.get('type') == 'status':
+                                stage = event_data.get('stage', 'unknown')
+                                message = event_data.get('message', '')
+                                print_status(stage, message)
+                                stages_seen.append(stage)
                             
-                            return True  # Sucesso, pode sair
-                            
-                    except json.JSONDecodeError as e:
-                        print(f"⚠️  Erro ao decodificar JSON: {e}")
-                        print(f"   Linha: {line_str[:100]}")
-                    except Exception as e:
-                        print(f"⚠️  Erro ao processar evento: {e}")
+                            elif event_data.get('type') == 'done':
+                                full_response = event_data.get('response', '')
+                                adapter_used = event_data.get('adapter_used', 'N/A')
+                                adapter_applied = event_data.get('adapter_applied', False)
+                                
+                                print("\n" + "=" * 60)
+                                print("✅ Geração completa!")
+                                print("=" * 60)
+                                print(f"🔧 Adapter usado: {adapter_used}")
+                                print(f"🔧 Adapter aplicado: {adapter_applied}")
+                                print(f"\n📝 Resposta completa ({len(full_response)} chars):")
+                                print("-" * 60)
+                                print(full_response[:500] + ("..." if len(full_response) > 500 else ""))
+                                print("-" * 60)
+                                
+                                return True  # Sucesso, pode sair
+                                
+                        except json.JSONDecodeError as e:
+                            print(f"⚠️  Erro ao decodificar JSON: {e}")
+                            print(f"   Linha: {line_str[:100]}")
+                        except Exception as e:
+                            print(f"⚠️  Erro ao processar evento: {e}")
             
             print(f"\n📊 Estágios vistos: {len(stages_seen)}")
             print(f"   {', '.join(stages_seen)}")

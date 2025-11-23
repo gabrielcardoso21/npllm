@@ -146,7 +146,8 @@ class NpllmSystem:
         self.sleep.record_activity()
         
         # 1. LLM Base processa (inferência apenas)
-        response_raw = self.base_model.generate(query, max_length=512)
+        # IMPORTANTE: stream=False para garantir retorno de string, não generator
+        response_raw = self.base_model.generate(query, max_length=512, stream=False)
         
         # 2. Seletor escolhe adapter
         project_structure = None
@@ -495,7 +496,8 @@ class NpllmSystem:
                 self.logger.warning(f"Error retrieving course context: {e}")
         
         # 1. LLM Base processa (inferência apenas)
-        response_raw = self.base_model.generate(query, max_length=512)
+        # IMPORTANTE: stream=False para garantir retorno de string, não generator
+        response_raw = self.base_model.generate(query, max_length=512, stream=False)
         
         # 2. Seletor escolhe adapter
         project_structure = None
