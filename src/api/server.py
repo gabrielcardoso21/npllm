@@ -242,7 +242,14 @@ async def process_query(request: QueryRequest, stream: bool = False):
                 yield f"data: {json.dumps({'type': 'status', 'stage': 'finalizing', 'message': 'Finalizando...'})}\n\n"
                 
                 # Resposta completa
-                yield f"data: {json.dumps({'type': 'done', 'response': response, 'adapter_used': adapter_name, 'adapter_applied': adapter_loaded, 'message': 'Resposta gerada com sucesso'})}\n\n"
+                # IMPORTANTE: Garantir que response é string, não generator
+                if isinstance(response, str):
+                    response_str = response
+                else:
+                    # Se for generator ou outro tipo, converter para string
+                    response_str = str(response) if response else ""
+                
+                yield f"data: {json.dumps({'type': 'done', 'response': response_str, 'adapter_used': adapter_name, 'adapter_applied': adapter_loaded, 'message': 'Resposta gerada com sucesso'})}\n\n"
             
             return StreamingResponse(
                 generate_progress(),
