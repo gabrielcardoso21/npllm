@@ -232,7 +232,7 @@ async def process_query(request: QueryRequest, stream: bool = False):
                 # Gera resposta completa (sem streaming real)
                 # IMPORTANTE: stream=False para garantir retorno de string, não generator
                 logger.info(f"Calling base_model.generate() with stream=False, query_length={len(query_text)}")
-                response = system.base_model.generate(query_text, max_length=512, stream=False)
+                        response = system.base_model.generate(query_text, max_length=2048, stream=False)
                 logger.info(f"base_model.generate() returned type: {type(response)}, value_preview: {str(response)[:100] if response else 'None'}")
                 
                 # Garantir que response é string, não generator

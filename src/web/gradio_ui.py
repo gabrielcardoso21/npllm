@@ -196,8 +196,8 @@ def create_interface():
                 
                 response_output = gr.Textbox(
                     label="🤖 Resposta",
-                    lines=15,
-                    max_lines=30,
+                    lines=20,
+                    max_lines=50,  # Aumentado para permitir respostas maiores
                     interactive=True
                 )
                 

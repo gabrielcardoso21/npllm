@@ -138,7 +138,7 @@ class CodeLlamaBaseModel(LLMModelInterface):
     def generate(
         self,
         prompt: str,
-        max_length: int = 512,
+        max_length: int = 2048,  # Aumentado de 512 para 2048
         temperature: float = 0.7,
         top_p: float = 0.9,
         stream: bool = False,
