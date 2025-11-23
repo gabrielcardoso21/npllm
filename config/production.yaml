@@ -1,8 +1,9 @@
 # Configuração para produção (Contabo)
-# Usar modelo maior e mais capaz
+# Usando modelo menor (TinyLlama) para testes rápidos
+# Para usar modelo maior, altere para "bigcode/starcoder2-3b"
 
 model:
-  base_model: "bigcode/starcoder2-3b"  # Modelo maior para produção
+  base_model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # Modelo menor para testes
   device: "cpu"
-  max_memory: null
+  max_memory: "2GB"  # Reduzido para modelo menor
 
