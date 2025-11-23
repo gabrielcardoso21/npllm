@@ -9,7 +9,6 @@ import torch
 from peft import PeftModel
 
 from src.adapters.lora_adapter import LoRAAdapter
-from src.adapters.versioning import AdapterVersioning
 from src.utils.logging import get_logger
 
 
@@ -28,7 +27,7 @@ class AdapterManager:
         """
         self.logger = get_logger(self.__class__.__name__)
         self.base_model = base_model
-        self.versioning = AdapterVersioning()
+        # Versioning simplificado - apenas stable/experimental
         self.adapters_dir = Path("./adapters")
         self.adapters_dir.mkdir(parents=True, exist_ok=True)
         
@@ -58,9 +57,14 @@ class AdapterManager:
             self.logger.debug(f"Adapter {adapter_name} not found")
             return None
         
-        # Obtém versão preferida
-        version = self.versioning.get_preferred_version(adapter_name, prefer_stable)
+        # Obtém versão preferida (stable ou experimental)
+        version = "stable" if prefer_stable else "experimental"
         version_path = adapter_path / version
+        
+        # Se versão preferida não existe, tenta a outra
+        if not version_path.exists():
+            version = "experimental" if prefer_stable else "stable"
+            version_path = adapter_path / version
         
         if not version_path.exists():
             self.logger.warning(f"Adapter {adapter_name} version {version} not found")
