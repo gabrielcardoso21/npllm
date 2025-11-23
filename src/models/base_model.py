@@ -125,8 +125,9 @@ class CodeLlamaBaseModel(LLMModelInterface):
         max_length: int = 512,
         temperature: float = 0.7,
         top_p: float = 0.9,
+        stream: bool = False,
         **kwargs
-    ) -> str:
+    ):
         """
         Gera texto a partir de prompt com cache
         
@@ -140,40 +141,72 @@ class CodeLlamaBaseModel(LLMModelInterface):
         Returns:
             Texto gerado
         """
-        # Verifica cache primeiro
-        cache_key = f"{prompt}_{max_length}_{temperature}_{top_p}"
-        if cache_key in self.response_cache:
-            self.logger.debug("Cache hit for prompt")
-            return self.response_cache[cache_key]
-        
         # Carrega modelo se necessário
         self._load_model()
         
         # Tokeniza prompt
         inputs = self._tokenizer(prompt, return_tensors="pt").to(self.device)
         
-        # Gera resposta
-        with torch.no_grad():
-            outputs = self._model.generate(
-                **inputs,
-                max_length=max_length,
-                temperature=temperature,
-                top_p=top_p,
-                do_sample=True,
-                pad_token_id=self._tokenizer.pad_token_id,
-                **kwargs
+        if stream:
+            # Modo streaming: retorna generator
+            from transformers import TextIteratorStreamer
+            from threading import Thread
+            
+            streamer = TextIteratorStreamer(
+                self._tokenizer,
+                skip_prompt=True,
+                skip_special_tokens=True
             )
-        
-        # Decodifica resposta
-        generated_text = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
-        # Remove prompt da resposta
-        response = generated_text[len(prompt):].strip()
-        
-        # Adiciona ao cache
-        self._update_cache(cache_key, response)
-        
-        return response
+            
+            # Inicia geração em thread separada
+            generation_kwargs = {
+                **inputs,
+                "max_length": max_length,
+                "temperature": temperature,
+                "top_p": top_p,
+                "do_sample": True,
+                "pad_token_id": self._tokenizer.pad_token_id,
+                "streamer": streamer,
+                **kwargs
+            }
+            
+            thread = Thread(target=self._model.generate, kwargs=generation_kwargs)
+            thread.start()
+            
+            # Yield tokens conforme são gerados
+            for token in streamer:
+                if token:
+                    yield token
+        else:
+            # Modo normal: retorna string completa
+            # Verifica cache primeiro
+            cache_key = f"{prompt}_{max_length}_{temperature}_{top_p}"
+            if cache_key in self.response_cache:
+                self.logger.debug("Cache hit for prompt")
+                return self.response_cache[cache_key]
+            
+            # Gera resposta
+            with torch.no_grad():
+                outputs = self._model.generate(
+                    **inputs,
+                    max_length=max_length,
+                    temperature=temperature,
+                    top_p=top_p,
+                    do_sample=True,
+                    pad_token_id=self._tokenizer.pad_token_id,
+                    **kwargs
+                )
+            
+            # Decodifica resposta
+            generated_text = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # Remove prompt da resposta
+            response = generated_text[len(prompt):].strip()
+            
+            # Adiciona ao cache
+            self._update_cache(cache_key, response)
+            
+            return response
     
     def encode(self, text: str) -> torch.Tensor:
         """
