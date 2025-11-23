@@ -35,11 +35,11 @@ class DatabaseConfig(BaseSettings):
 
 class ModelConfig(BaseSettings):
     """Model configuration"""
-    base_model: str = "codellama/CodeLlama-3B-Instruct"
+    base_model: str = Field(default="TinyLlama/TinyLlama-1.1B-Chat-v1.0", env="MODEL_BASE_MODEL")
     quantization: str = "4bit"
     quantization_type: str = "ggml"
     device: str = "cpu"
-    max_memory: str = "6GB"
+    max_memory: str = "2GB"  # Reduzido para modelo menor
 
 
 class RAGConfig(BaseSettings):

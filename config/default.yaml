@@ -1,12 +1,16 @@
 # npllm Default Configuration
 
 # Model Configuration
+# Para testes locais rápidos, usar modelo menor
+# Opções: "TinyLlama/TinyLlama-1.1B-Chat-v1.0" (muito rápido, ~600MB)
+#         "microsoft/phi-2" (rápido, ~1.6GB)
+#         "bigcode/starcoder2-3b" (produção, ~6GB)
 model:
-  base_model: "bigcode/starcoder2-3b"  # StarCoder2 3B - modelo público, especializado em código (melhor que StarCoder original)
+  base_model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"  # Modelo pequeno para testes locais
   quantization: "4bit"
   quantization_type: "ggml"
   device: "cpu"  # Will use CPU for inference
-  max_memory: "6GB"
+  max_memory: "2GB"  # Reduzido para modelo menor
 
 # Adapters Configuration
 adapters:
