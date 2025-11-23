@@ -115,6 +115,9 @@ class CourseStatusResponse(BaseModel):
     concepts_learned: int
     created_at: str
     updated_at: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
 
 
 class ValidationRequest(BaseModel):
