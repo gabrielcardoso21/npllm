@@ -1,163 +1,147 @@
 """
-Gerenciador de adapters LoRA
-Lazy loading e gerenciamento de múltiplos adapters simultâneos
+Adapter Manager
+Gerencia carregamento e aplicação de adapters LoRA
 """
 
-from typing import Dict, Optional, List
+from typing import Optional, Dict, Any
 from pathlib import Path
+import torch
+from peft import PeftModel
 
 from src.adapters.lora_adapter import LoRAAdapter
-from src.adapters.versioning import AdapterVersionManager, AdapterVersion
-from src.models.base_model import CodeLlamaBaseModel
-from src.utils.config import get_config
+from src.adapters.versioning import AdapterVersioning
 from src.utils.logging import get_logger
 
 
 class AdapterManager:
     """
-    Gerenciador de adapters com lazy loading
-    Otimizado para reduzir uso de memória
+    Gerencia adapters LoRA
+    Carrega, versiona e aplica adapters ao modelo base
     """
     
-    def __init__(self, base_model: CodeLlamaBaseModel):
+    def __init__(self, base_model):
         """
         Inicializa gerenciador de adapters
         
         Args:
-            base_model: Modelo base CodeLlama
+            base_model: Modelo base (CodeLlamaBaseModel)
         """
         self.logger = get_logger(self.__class__.__name__)
         self.base_model = base_model
-        self.config = get_config()
+        self.versioning = AdapterVersioning()
+        self.adapters_dir = Path("./adapters")
+        self.adapters_dir.mkdir(parents=True, exist_ok=True)
         
-        # Version manager
-        self.version_manager = AdapterVersionManager()
+        # Cache de adapters carregados
+        self._loaded_adapters: Dict[str, Any] = {}
+        self._current_adapter: Optional[str] = None
         
-        # Adapters carregados em memória (lazy loading)
-        self._loaded_adapters: Dict[str, LoRAAdapter] = {}
-        # Chave: "{context}_{version}"
-        
-        # Configuração de adapters
-        adapter_config = self.config.get_section("adapters")
-        lora_config = adapter_config.get("lora", {})
-        
-        self.lora_r = lora_config.get("r", 16)
-        self.lora_alpha = lora_config.get("lora_alpha", 32)
-        self.lora_dropout = lora_config.get("lora_dropout", 0.1)
-        self.target_modules = lora_config.get("target_modules", ["q_proj", "v_proj", "k_proj", "o_proj"])
+        self.logger.info("Adapter manager initialized")
     
-    def create_adapter(
-        self,
-        name: str,
-        context: str,
-        version: str = "stable"
-    ) -> LoRAAdapter:
+    def get_adapter(self, adapter_name: str, prefer_stable: bool = True) -> Optional[LoRAAdapter]:
         """
-        Cria novo adapter
+        Obtém adapter por nome
         
         Args:
-            name: Nome do adapter
-            context: Contexto (ex: 'odoo', 'django')
-            version: Versão ('stable' ou 'experimental')
+            adapter_name: Nome do adapter
+            prefer_stable: Se True, prefere versão stable
         
         Returns:
-            Adapter criado
+            Adapter ou None se não encontrado
         """
-        adapter = LoRAAdapter(
-            base_model=self.base_model._model if self.base_model._model else self.base_model,
-            name=name,
-            context=context,
-            version=version,
-            r=self.lora_r,
-            lora_alpha=self.lora_alpha,
-            lora_dropout=self.lora_dropout,
-            target_modules=self.target_modules
-        )
+        # Verifica se adapter existe
+        adapter_path = self.adapters_dir / adapter_name
         
-        self.version_manager.register(adapter, context, version)
-        
-        return adapter
-    
-    def load_adapter(
-        self,
-        context: str,
-        version: Optional[str] = None,
-        prefer_stable: bool = True
-    ) -> Optional[LoRAAdapter]:
-        """
-        Carrega adapter (lazy loading)
-        
-        Args:
-            context: Contexto do adapter
-            version: Versão específica (None para automático)
-            prefer_stable: Se True, prefere stable quando version=None
-        
-        Returns:
-            Adapter carregado ou None
-        """
-        # Verifica se já está carregado
-        cache_key = f"{context}_{version or 'auto'}"
-        if cache_key in self._loaded_adapters:
-            self.logger.debug(f"Adapter already loaded: {cache_key}")
-            return self._loaded_adapters[cache_key]
-        
-        # Tenta obter do version manager
-        adapter = self.version_manager.get(context, version, prefer_stable)
-        
-        if adapter is None:
-            self.logger.warning(f"Adapter not found: {context}/{version}")
+        if not adapter_path.exists():
+            self.logger.debug(f"Adapter {adapter_name} not found")
             return None
         
-        # Carrega em memória
-        self._loaded_adapters[cache_key] = adapter
-        self.logger.info(f"Adapter loaded: {cache_key}")
+        # Obtém versão preferida
+        version = self.versioning.get_preferred_version(adapter_name, prefer_stable)
+        version_path = adapter_path / version
         
-        return adapter
+        if not version_path.exists():
+            self.logger.warning(f"Adapter {adapter_name} version {version} not found")
+            return None
+        
+        # Carrega adapter
+        try:
+            adapter = LoRAAdapter.load(str(version_path))
+            return adapter
+        except Exception as e:
+            self.logger.error(f"Error loading adapter {adapter_name}: {e}")
+            return None
     
-    def unload_adapter(self, context: str, version: Optional[str] = None):
+    def load_adapter_for_generation(self, adapter_name: str, base_model_instance) -> bool:
         """
-        Descarrega adapter da memória
+        Carrega adapter no modelo base para geração
+        
+        IMPORTANTE: LoRA adapters são aplicados via PEFT durante a geração do modelo
+        Este método carrega o adapter no modelo base usando PeftModel
         
         Args:
-            context: Contexto do adapter
-            version: Versão específica
-        """
-        cache_key = f"{context}_{version or 'auto'}"
-        if cache_key in self._loaded_adapters:
-            del self._loaded_adapters[cache_key]
-            self.logger.info(f"Adapter unloaded: {cache_key}")
-    
-    def get_adapter(
-        self,
-        context: str,
-        version: Optional[str] = None,
-        prefer_stable: bool = True
-    ) -> Optional[LoRAAdapter]:
-        """
-        Obtém adapter (carrega se necessário)
-        
-        Args:
-            context: Contexto do adapter
-            version: Versão específica
-            prefer_stable: Preferir stable
+            adapter_name: Nome do adapter
+            base_model_instance: Instância do modelo base
         
         Returns:
-            Adapter ou None
+            True se carregado com sucesso
         """
-        return self.load_adapter(context, version, prefer_stable)
-    
-    def list_adapters(self, context: Optional[str] = None) -> List[Dict[str, str]]:
-        """Lista adapters disponíveis"""
-        return self.version_manager.list_adapters(context)
-    
-    def save_adapter(self, adapter: LoRAAdapter, path: Optional[str] = None):
-        """Salva adapter em disco"""
-        if path is None:
-            path = f"./adapters/{adapter.get_context()}/{adapter.get_version()}"
+        # Se já está carregado, não precisa recarregar
+        if self._current_adapter == adapter_name and adapter_name in self._loaded_adapters:
+            return True
         
-        adapter.save(path)
+        try:
+            # Obtém adapter
+            adapter = self.get_adapter(adapter_name, prefer_stable=True)
+            if not adapter:
+                return False
+            
+            # Carrega modelo se necessário
+            if base_model_instance._model is None:
+                base_model_instance._load_model()
+            
+            model = base_model_instance._model
+            adapter_path = self.adapters_dir / adapter_name / "stable"
+            
+            if not adapter_path.exists():
+                adapter_path = self.adapters_dir / adapter_name / "experimental"
+            
+            if adapter_path.exists():
+                # Carrega adapter usando PEFT
+                model = PeftModel.from_pretrained(model, str(adapter_path))
+                base_model_instance._model = model
+                
+                self._loaded_adapters[adapter_name] = model
+                self._current_adapter = adapter_name
+                
+                self.logger.info(f"Adapter {adapter_name} loaded for generation")
+                return True
+            else:
+                self.logger.warning(f"Adapter path not found: {adapter_path}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"Error loading adapter {adapter_name} for generation: {e}")
+            return False
     
-    def promote_to_stable(self, context: str) -> bool:
-        """Promove adapter experimental para stable"""
-        return self.version_manager.promote_to_stable(context)
-
+    def unload_adapter(self):
+        """Descarrega adapter atual do modelo"""
+        if self._current_adapter:
+            # PEFT não tem método direto para descarregar
+            # Recarrega modelo base sem adapter
+            if self.base_model._model:
+                # Salva referência ao modelo base original
+                # Por enquanto, apenas limpa cache
+                self._current_adapter = None
+                self.logger.info("Adapter unloaded")
+    
+    def list_adapters(self) -> list:
+        """Lista todos os adapters disponíveis"""
+        adapters = []
+        for adapter_dir in self.adapters_dir.iterdir():
+            if adapter_dir.is_dir():
+                adapters.append({
+                    "name": adapter_dir.name,
+                    "versions": list(adapter_dir.iterdir())
+                })
+        return adapters

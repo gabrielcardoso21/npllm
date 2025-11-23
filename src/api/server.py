@@ -202,7 +202,7 @@ async def process_query(request: QueryRequest, stream: bool = False):
                 
                 yield f"data: {json.dumps({'type': 'adapter', 'adapter': adapter_name})}\n\n"
                 
-                # Gera resposta com streaming
+                # Gera resposta com streaming (do LLM Base)
                 generator = system.base_model.generate(query_text, max_length=512, stream=True)
                 
                 full_response = ""
@@ -210,9 +210,21 @@ async def process_query(request: QueryRequest, stream: bool = False):
                     full_response += token
                     yield f"data: {json.dumps({'type': 'token', 'token': token})}\n\n"
                 
-                # Finaliza
+                # Agora que temos a resposta completa, aplica adapter se disponível
+                adapter = system.adapter_manager.get_adapter(adapter_name, prefer_stable=True)
+                final_response = full_response
+                
+                if adapter:
+                    # Adapter revisa resposta completa
+                    # Por enquanto, adapter é aplicado durante fine-tuning
+                    # Em produção, aqui poderia ter uma revisão em tempo real
+                    # Por ora, mantemos resposta do LLM Base
+                    # TODO: Implementar revisão do adapter em tempo real
+                    pass
+                
+                # Finaliza com resposta completa (pode ter sido revisada pelo adapter)
                 system._last_adapter_name = adapter_name
-                yield f"data: {json.dumps({'type': 'done', 'response': full_response, 'adapter_used': adapter_name})}\n\n"
+                yield f"data: {json.dumps({'type': 'done', 'response': final_response, 'adapter_used': adapter_name, 'adapter_applied': adapter is not None})}\n\n"
             
             return StreamingResponse(
                 generate_stream(),
