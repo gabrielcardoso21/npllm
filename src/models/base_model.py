@@ -87,16 +87,32 @@ class CodeLlamaBaseModel(LLMModelInterface):
                 self.logger.warning("Nenhum token HF encontrado. Modelo pode falhar se for gated.")
             
             # Carrega modelo quantizado
-            self._model = AutoModelForCausalLM.from_pretrained(
-                self.model_path,
-                quantization_config=quantization_config,
-                device_map="auto",
-                cache_dir=str(self.cache_dir),
-                torch_dtype=torch.float16,
-                low_cpu_mem_usage=True,
-                token=hf_token,
-                trust_remote_code=True
-            )
+            # Para modelos muito pequenos (TinyLlama), pode não precisar de quantização
+            use_quantization = "TinyLlama" not in self.model_path and "phi-2" not in self.model_path
+            
+            if use_quantization:
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    self.model_path,
+                    quantization_config=quantization_config,
+                    device_map="auto",
+                    cache_dir=str(self.cache_dir),
+                    torch_dtype=torch.float16,
+                    low_cpu_mem_usage=True,
+                    token=hf_token,
+                    trust_remote_code=True
+                )
+            else:
+                # Modelos pequenos: sem quantização para mais velocidade
+                self.logger.info("Loading small model without quantization for faster inference")
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    self.model_path,
+                    device_map="auto",
+                    cache_dir=str(self.cache_dir),
+                    torch_dtype=torch.float32,  # float32 para modelos pequenos
+                    low_cpu_mem_usage=True,
+                    token=hf_token,
+                    trust_remote_code=True
+                )
             
             # Carrega tokenizer
             self._tokenizer = AutoTokenizer.from_pretrained(

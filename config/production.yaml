@@ -1,0 +1,8 @@
+# Configuração para produção (Contabo)
+# Usar modelo maior e mais capaz
+
+model:
+  base_model: "bigcode/starcoder2-3b"  # Modelo maior para produção
+  device: "cpu"
+  max_memory: null
+
