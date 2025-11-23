@@ -211,7 +211,16 @@ class CodeLlamaBaseModel(LLMModelInterface):
         generated_text = self._tokenizer.decode(outputs[0], skip_special_tokens=True)
         
         # Remove prompt da resposta
-        response = generated_text[len(prompt):].strip()
+        # IMPORTANTE: Verificar se o prompt está no início antes de remover
+        if generated_text.startswith(prompt):
+            response = generated_text[len(prompt):].strip()
+        else:
+            # Se o prompt não estiver no início, pode ser que o modelo tenha reformatado
+            # Nesse caso, retorna tudo (o modelo pode ter adicionado contexto)
+            response = generated_text.strip()
+        
+        # Log para debug
+        self.logger.debug(f"Generated text length: {len(generated_text)}, Response length: {len(response)}")
         
         # Adiciona ao cache
         self._update_cache(cache_key, response)
