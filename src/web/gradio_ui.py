@@ -251,13 +251,32 @@ def create_interface():
                 query,
                 project_path if project_path.strip() else None,
                 file_path if file_path.strip() else None,
-                stream=False
+                stream=False,
+                direct=False
             )
             
             if error:
                 return "", error, response
             else:
-                return response, "✅ Resposta gerada com sucesso!", response
+                return response, "✅ Resposta do sistema completo gerada!", response
+        
+        def submit_direct(query, project_path, file_path):
+            """Query direta no modelo base (sem adapters)"""
+            if not query.strip():
+                return "", "⚠️ Por favor, digite uma pergunta", ""
+            
+            response, error = query_api(
+                query,
+                project_path if project_path.strip() else None,
+                file_path if file_path.strip() else None,
+                stream=False,
+                direct=True  # Usa rota direta
+            )
+            
+            if error:
+                return "", error, response
+            else:
+                return response, "⚡ Resposta direta do modelo (sem adapters)", response
         
         def submit_streaming(query, project_path, file_path):
             if not query.strip():
@@ -267,7 +286,8 @@ def create_interface():
                 query,
                 project_path if project_path.strip() else None,
                 file_path if file_path.strip() else None,
-                stream=True
+                stream=True,
+                direct=False
             )
             
             return response, status, response
