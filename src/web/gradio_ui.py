@@ -151,15 +151,30 @@ def check_health() -> str:
 def create_interface():
     """Cria interface Gradio"""
     
-    with gr.Blocks(
-        title="NPLLM - Assistente de Código",
-        theme=gr.themes.Soft(),
-        css="""
-        .gradio-container {
-            max-width: 1200px !important;
-        }
-        """
-    ) as demo:
+    # Compatibilidade com versões diferentes do Gradio
+    try:
+        # Tenta Gradio 4.x com theme
+        demo = gr.Blocks(
+            title="NPLLM - Assistente de Código",
+            theme=gr.themes.Soft(),
+            css="""
+            .gradio-container {
+                max-width: 1200px !important;
+            }
+            """
+        )
+    except (TypeError, AttributeError):
+        # Gradio 3.x ou versão sem theme
+        demo = gr.Blocks(
+            title="NPLLM - Assistente de Código",
+            css="""
+            .gradio-container {
+                max-width: 1200px !important;
+            }
+            """
+        )
+    
+    with demo:
         gr.Markdown(
             """
             # 🧠 NPLLM - Assistente de Código Neuroplástico
